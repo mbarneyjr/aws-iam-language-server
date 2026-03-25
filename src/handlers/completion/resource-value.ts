@@ -12,15 +12,21 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
   const statement = context.handler.getStatementContext(context.uri, context.position);
   const statementActions = statement?.Action ?? statement?.NotAction ?? [];
   const expandedActions = statementActions.flatMap(expandActionPattern);
-  const actionArns = ServiceReference.getArnsForActions(expandedActions);
-  for (const arn of actionArns) {
+  const resources = ServiceReference.getResourcesForActions(expandedActions);
+  for (const [arn, resource] of resources.entries()) {
     if (location.partial && !arn.toLowerCase().startsWith(location.partial.toLowerCase())) continue;
     items.push({
       label: arn,
       sortText: `0-${arn}`,
       kind: CompletionItemKind.Value,
+      detail: `${resource.service}/${resource.name}`,
+      documentation: {
+        kind: 'markdown',
+        value: [`**Condition Keys**:`, '', resource.conditionKeys.map((key) => `- \`${key}\``).join('\n')].join('\n'),
+      },
     });
   }
+
   if (parts.length === 1) {
     // suggest only arn
     const label = 'arn';
@@ -37,7 +43,7 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
       kind: CompletionItemKind.Enum,
       documentation: {
         kind: 'markdown',
-        value: `# ${partition.name}`,
+        value: partition.name,
       },
     }));
     for (const item of potentialItems) {
@@ -64,8 +70,11 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
     const partition =
       parts[1] === 'aws' || parts[1] === 'aws-us-gov' || parts[1] === 'aws-cn' ? partitions[parts[1]] : partitions.aws;
     const service = parts[2];
-    const arns = ServiceReference.getArnsForService(service);
-    const hasRegionArn = arns.find((arn) => arn.includes(`\${Region}`));
+    const resources = ServiceReference.getResourcesForActions(expandActionPattern(`${service}:*`));
+    let hasRegionArn = false;
+    for (const arn of resources.keys()) {
+      if (arn.includes(`\${Region}`)) hasRegionArn = true;
+    }
     if (!hasRegionArn) {
       items.push({
         label: ':',
@@ -86,7 +95,7 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
             kind: CompletionItemKind.Enum,
             documentation: {
               kind: 'markdown',
-              value: `# ${region.name}`,
+              value: region.name,
             },
           });
         }
@@ -107,16 +116,14 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
     const service = parts[2];
     const region = parts[3];
     const account = parts[4];
-    const potentialLabels = ServiceReference.getArnsForService(service).filter((pattern) => {
-      const patternParts = pattern.split(':');
+    const resources = ServiceReference.getResourcesForActions(expandActionPattern(`${service}:*`));
+    for (const resource of resources.values()) {
+      const patternParts = resource.arn.split(':');
       const patternRegion = patternParts[3];
       const patternAccount = patternParts[4];
-      if (region.length > 0 !== patternRegion.length > 0) return false;
-      if (account.length > 0 !== patternAccount.length > 0) return false;
-      return true;
-    });
-    for (const labelPattern of potentialLabels) {
-      const label = labelPattern
+      if (region.length > 0 !== patternRegion.length > 0) continue;
+      if (account.length > 0 !== patternAccount.length > 0) continue;
+      const label = resource.arn
         .replace(`\${Partition}`, parts[1])
         .replace(`\${Region}`, parts[3])
         .replace(`\${Account}`, parts[4]);
@@ -124,6 +131,11 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
       items.push({
         label,
         kind: CompletionItemKind.Enum,
+        detail: resource.name,
+        documentation: {
+          kind: 'markdown',
+          value: [`**Condition Keys**:`, '', resource.conditionKeys.map((key) => `- \`${key}\``).join('\n')].join('\n'),
+        },
       });
     }
   }

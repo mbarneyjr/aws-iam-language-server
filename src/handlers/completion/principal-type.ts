@@ -17,7 +17,7 @@ export function completePrincipalType(location: PrincipalTypeLocation, context: 
       kind: CompletionItemKind.Enum,
       documentation: {
         kind: 'markdown',
-        value: `# ${principalType.description}`,
+        value: principalType.description,
       },
     });
   }

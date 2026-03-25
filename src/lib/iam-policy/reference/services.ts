@@ -92,8 +92,8 @@ export class ServiceReference {
     }
   }
 
-  static getArnsForActions(actions: string[]): Array<string> {
-    const arns = new Set<string>();
+  static getResourcesForActions(actions: string[]) {
+    const resources = new Map<string, { service: string; name: string; arn: string; conditionKeys: Array<string> }>();
     for (const action of actions) {
       const [service, actionName] = action.split(':');
       const serviceData = ServiceReference.getServiceData(service);
@@ -103,21 +103,16 @@ export class ServiceReference {
         const resourceDef = serviceData.resources.find((r) => r.name === actionResource.name);
         if (resourceDef) {
           for (const arn of resourceDef.arnFormats) {
-            arns.add(arn);
+            resources.set(arn, {
+              service,
+              name: resourceDef.name,
+              arn,
+              conditionKeys: resourceDef.conditionKeys,
+            });
           }
         }
       }
     }
-    return [...arns].sort();
-  }
-
-  static getArnsForService(service: string): Array<string> {
-    const arns = [];
-    for (const resource of ServiceReference.getServiceData(service).resources) {
-      for (const arnFormat of resource.arnFormats) {
-        arns.push(arnFormat);
-      }
-    }
-    return arns;
+    return resources;
   }
 }

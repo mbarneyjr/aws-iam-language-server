@@ -13,7 +13,7 @@ export function completePrincipalValue(location: PrincipalValueLocation, _contex
       kind: CompletionItemKind.Enum,
       documentation: {
         kind: 'markdown',
-        value: '# Public Unauthenticated Access',
+        value: 'Public Unauthenticated Access',
       },
     });
   }

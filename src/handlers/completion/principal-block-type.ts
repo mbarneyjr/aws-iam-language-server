@@ -24,7 +24,7 @@ export function completePrincipalBlockType(
       kind: CompletionItemKind.Enum,
       documentation: {
         kind: 'markdown',
-        value: `# ${principalType.description}`,
+        value: principalType.description,
       },
     });
   }

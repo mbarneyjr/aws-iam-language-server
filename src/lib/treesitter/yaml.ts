@@ -126,6 +126,20 @@ export class TreeYaml extends TreeBase {
       // starts between this mapping's end and the cursor, the cursor is in a different statement.
       if (this.#hasSiblingItemBetween(mapping, position)) continue;
 
+      // Don't extend into a different Statement sequence. If the cursor is inside
+      // another Statement block_sequence (different from the one containing this mapping),
+      // skip this candidate.
+      const parentSequence = this.#getParentStatementSequence(mapping);
+      if (parentSequence) {
+        const cursorInDifferentSequence = candidates.some((other) => {
+          if (other.id === mapping.id) return false;
+          const otherSequence = this.#getParentStatementSequence(other);
+          if (!otherSequence || otherSequence.id === parentSequence.id) return false;
+          return position.line >= otherSequence.startPosition.row && position.line <= otherSequence.endPosition.row;
+        });
+        if (cursorInDifferentSequence) continue;
+      }
+
       // Check no other candidate starts between this mapping's end and cursor
       const hasIntervening = candidates.some(
         (other) =>
@@ -535,6 +549,14 @@ export class TreeYaml extends TreeBase {
    * Expected chain (block_node is optional at each level):
    *   block_mapping > block_node? > block_sequence_item > block_sequence > block_node? > block_mapping_pair
    */
+  #getParentStatementSequence(mapping: Node): Node | null {
+    const item = this.#skipBlockNode(mapping.parent);
+    if (item?.type !== 'block_sequence_item') return null;
+    const sequence = item.parent;
+    if (sequence?.type !== 'block_sequence') return null;
+    return sequence;
+  }
+
   #isInsideStatementSequence(mapping: Node): boolean {
     let node = this.#skipBlockNode(mapping.parent);
     if (node?.type !== 'block_sequence_item') return false;

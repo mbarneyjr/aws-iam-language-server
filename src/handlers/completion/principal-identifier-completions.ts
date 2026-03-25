@@ -69,7 +69,7 @@ export function completePrincipalIdentifier(principalType: string | null, partia
         items.push({
           label: id,
           kind: CompletionItemKind.Enum,
-          documentation: { kind: 'markdown', value: `# ${partition.name}` },
+          documentation: { kind: 'markdown', value: partition.name },
         });
       }
     }
@@ -102,7 +102,7 @@ export function completePrincipalIdentifier(principalType: string | null, partia
           items.push({
             label: region.id,
             kind: CompletionItemKind.Enum,
-            documentation: { kind: 'markdown', value: `# ${region.name}` },
+            documentation: { kind: 'markdown', value: region.name },
           });
         }
       }
@@ -111,7 +111,7 @@ export function completePrincipalIdentifier(principalType: string | null, partia
     items.push({
       label: `${partial}:`,
       kind: CompletionItemKind.Enum,
-      documentation: { kind: 'markdown', value: '# AWS Account ID' },
+      documentation: { kind: 'markdown', value: 'AWS Account ID' },
     });
   } else {
     const service = parts[2];

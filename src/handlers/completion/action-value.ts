@@ -18,7 +18,7 @@ export function completeActionValue(location: ActionValueLocation, _context: Com
     if (service && actionName) {
       const action = ServiceReference.getAction(service, actionName);
       if (action) {
-        item.detail = action.accessLevel;
+        item.detail = action.description;
         if (action.description) {
           item.documentation = {
             kind: MarkupKind.Markdown,
@@ -35,7 +35,7 @@ export function completeActionValue(location: ActionValueLocation, _context: Com
 function formatActionDocumentation(action: Action): string {
   const parts: string[] = [];
 
-  if (action.description) parts.push(action.description);
+  if (action.accessLevel) parts.push(`**Access Level**: ${action.accessLevel}`);
 
   if (action.resourceTypes && action.resourceTypes.length > 0) {
     const resources = action.resourceTypes.map((resourceType) =>

@@ -8,9 +8,7 @@ type PolicyElement = {
 export const StatementKeys: Record<string, PolicyElement> = {
   Sid: {
     policyTypes: ['identity', 'resource'],
-    description: `# Sid
-
-An optional identifier for a policy statement.
+    description: `An optional identifier for a policy statement.
 Use it as a descriptive label to distinguish statements within a policy.
 
 The \`Sid\` value must be unique within a policy document.
@@ -26,9 +24,7 @@ These services may require \`Sid\` and enforce additional uniqueness constraints
   },
   Effect: {
     policyTypes: ['identity', 'resource'],
-    description: `# Effect
-
-A required element that specifies whether the statement allows or explicitly denies access.
+    description: `A required element that specifies whether the statement allows or explicitly denies access.
 Valid values are \`Allow\` and \`Deny\` (case-sensitive).
 
 By default, access to resources is implicitly denied.
@@ -39,9 +35,7 @@ Set \`Effect\` to \`Deny\` to explicitly deny access — an explicit deny always
   },
   Principal: {
     policyTypes: ['resource'],
-    description: `# Principal
-
-Specifies the principal that is allowed or denied access to a resource.
+    description: `Specifies the principal that is allowed or denied access to a resource.
 Required in resource-based policies (e.g. S3 bucket policies, KMS key policies, role trust policies).
 Cannot be used in identity-based policies — the principal is implicitly the identity the policy is attached to.
 
@@ -69,9 +63,7 @@ Multiple principals are evaluated as a logical OR.
   },
   NotPrincipal: {
     policyTypes: ['resource'],
-    description: `# NotPrincipal
-
-Matches every principal *except* the ones specified.
+    description: `Matches every principal *except* the ones specified.
 Must be used with \`"Effect": "Deny"\` — using it with \`"Effect": "Allow"\` is not supported.
 Only valid in resource-based policies; not supported in identity-based policies, role trust policies, SCPs, or RCPs.
 
@@ -88,9 +80,7 @@ Otherwise the policy may deny access to the entire account.
   },
   Action: {
     policyTypes: ['identity', 'resource'],
-    description: `# Action
-
-Specifies the actions that the statement allows or denies.
+    description: `Specifies the actions that the statement allows or denies.
 Each statement must include either \`Action\` or \`NotAction\`.
 
 Actions use the format \`service:action\` (e.g. \`s3:GetObject\`, \`iam:CreateUser\`).
@@ -105,9 +95,7 @@ Wildcards are supported:
   },
   NotAction: {
     policyTypes: ['identity', 'resource'],
-    description: `# NotAction
-
-Matches every action *except* the ones specified.
+    description: `Matches every action *except* the ones specified.
 Each statement must include either \`Action\` or \`NotAction\`.
 
 With \`"Effect": "Allow"\`, grants access to all applicable actions except those listed.
@@ -121,9 +109,7 @@ The \`Resource\` element determines which actions and services are applicable.
   },
   Resource: {
     policyTypes: ['identity', 'resource'],
-    description: `# Resource
-
-Specifies the object or objects that the statement applies to.
+    description: `Specifies the object or objects that the statement applies to.
 Each statement must include either \`Resource\` or \`NotResource\`.
 
 Resources are identified by ARN (e.g. \`arn:aws:s3:::my-bucket/*\`).
@@ -145,9 +131,7 @@ Policy variables (e.g. \`\${aws:username}\`) can be used in the resource-specifi
   },
   NotResource: {
     policyTypes: ['identity', 'resource'],
-    description: `# NotResource
-
-Matches every resource *except* the ones specified.
+    description: `Matches every resource *except* the ones specified.
 Each statement must include either \`Resource\` or \`NotResource\`.
 
 With \`"Effect": "Deny"\`, denies access to all resources except those listed.
@@ -161,9 +145,7 @@ With \`"Effect": "Allow"\`, grants access to all resources except those listed.
   },
   Condition: {
     policyTypes: ['identity', 'resource'],
-    description: `# Condition
-
-An optional element that specifies conditions under which the statement is in effect.
+    description: `An optional element that specifies conditions under which the statement is in effect.
 
 The structure is \`{ "Operator": { "ConditionKey": "Value" } }\`:
 - **Condition operator** — the type of comparison (e.g. \`StringEquals\`, \`ArnLike\`, \`IpAddress\`, \`NumericLessThan\`, \`Bool\`, \`Null\`)
