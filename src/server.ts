@@ -17,7 +17,7 @@ connection.onInitialize(async () => {
       completionProvider: {
         triggerCharacters: ['"', ':', '*'],
       },
-      hoverProvider: true,
+      hoverProvider: false,
     },
   };
 });
