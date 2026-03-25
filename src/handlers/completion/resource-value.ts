@@ -108,7 +108,7 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
       kind: CompletionItemKind.Enum,
       documentation: {
         kind: 'markdown',
-        value: '# AWS Account ID',
+        value: 'AWS Account ID',
       },
     });
   } else {
