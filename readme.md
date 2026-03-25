@@ -9,6 +9,32 @@ It supports policies written in
 - CloudFormation/SAM (YAML or JSON)
 - HCL (`jsonencode` objects or `statement` blocks)
 
+## Installation
+
+### Visual Studio Code
+
+Intsll the [extension](https://marketplace.visualstudio.com/items?itemName=MichaelBarney.aws-iam-ls).
+
+### Neovim, etc
+
+You can install the language server globally with npm:
+
+```sh
+npm install -g aws-iam-ls
+```
+
+And then you can set your editor up, for instance if you're running Neovim:
+
+```lua
+vim.lsp.config("aws-iam-ls", {
+  cmd = { "aws-iam-ls", "--stdio" },
+  filetypes = { "yaml", "yaml.cloudformation", "json", "json.cloudformation", "terraform", "tofu" },
+  root_markers = { ".git" },
+})
+
+vim.lsp.enable("aws-iam-ls")
+```
+
 ## Features
 
 ### Completion
