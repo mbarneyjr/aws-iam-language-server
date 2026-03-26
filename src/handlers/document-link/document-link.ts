@@ -19,18 +19,27 @@ export function documentLinkHandler(
   for (const match of text.matchAll(pattern)) {
     if (!actionSet.has(match[0].toLowerCase())) continue;
 
-    const [service, actionName] = match[0].split(':');
-    const action = ServiceReference.getAction(service, actionName);
-    if (!action?.url) continue;
+    const [serviceName, actionName] = match[0].split(':');
+    const action = ServiceReference.getAction(serviceName, actionName);
+    if (!action) continue;
 
     const index = match.index ?? 0;
-    const startPos = document.positionAt(index);
-    const endPos = document.positionAt(index + match[0].length);
-    links.push({
-      range: { start: startPos, end: endPos },
-      target: action.url,
-      tooltip: 'API Operation Documentation',
-    });
+    const start = document.positionAt(index);
+    const end = document.positionAt(index + match[0].length);
+    if (action.iamUrl) {
+      links.push({
+        range: { start, end },
+        target: action.iamUrl,
+        tooltip: 'IAM Actions, Conditions, and Context Keys',
+      });
+    }
+    if (action.operationUrl) {
+      links.push({
+        range: { start, end },
+        target: action.operationUrl,
+        tooltip: 'API Operation Documentation',
+      });
+    }
   }
 
   return links;
