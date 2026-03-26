@@ -64,6 +64,7 @@ async function scrapeAndMerge(slug: string): Promise<void> {
       action.resourceTypes = docs.resourceTypes;
       action.dependentActions = docs.dependentActions.length > 0 ? docs.dependentActions : undefined;
       action.permissionOnly = docs.permissionOnly || undefined;
+      action.url = docs.url || undefined;
     }
   }
 
@@ -84,6 +85,7 @@ type ScrapedAction = {
   resourceTypes: Array<{ name: string; required: boolean }>;
   dependentActions: string[];
   permissionOnly: boolean;
+  url: string;
 };
 
 function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction> {
@@ -124,6 +126,8 @@ function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction>
     const actionLink = actionCell.find('a').first();
     let actionName = actionLink.length > 0 ? actionLink.text().trim() : actionCell.text().trim();
     if (!actionName) return;
+
+    const url = actionLink.attr('href') ?? '';
 
     const permissionOnly = actionCell.text().includes('[permission only]');
     actionName = actionName.replace(/\s*\[permission only\]\s*/, '').trim();
@@ -171,6 +175,7 @@ function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction>
       resourceTypes,
       dependentActions,
       permissionOnly,
+      url,
     };
   });
 

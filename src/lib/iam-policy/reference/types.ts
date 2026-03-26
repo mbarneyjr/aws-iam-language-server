@@ -58,6 +58,7 @@ export type Action = {
   resourceTypes?: Array<{ name: string; required: boolean }>;
   dependentActions?: Array<string>;
   permissionOnly?: boolean;
+  url?: string;
 };
 
 export type ConditionKey = {
