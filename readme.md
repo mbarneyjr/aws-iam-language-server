@@ -37,6 +37,15 @@ vim.lsp.enable("aws-iam-language-server")
 
 ## Features
 
+### DocumentLink
+
+Certain elements within a policy document will have a document link associated with it.
+
+Actions:
+
+- IAM Actions reference
+- API operation
+
 ### Completion
 
 This language server provides completion on:
