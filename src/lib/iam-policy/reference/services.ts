@@ -44,8 +44,11 @@ export class ServiceReference {
     return ServiceReference.#allServices;
   }
 
-  static getActionsForService(service: string): Array<string> {
-    return Object.keys(ServiceReference.getServiceData(service).actions);
+  static getActionsForService(service: string): Array<Action> {
+    return Object.entries(ServiceReference.getServiceData(service).actions).map(([actionName, action]) => {
+      if (!action.name) action.name = `${service}:${actionName}`;
+      return action;
+    });
   }
 
   static getConditionKeysForActions(actions: string[]): Array<{ name: string; types: string[] }> {

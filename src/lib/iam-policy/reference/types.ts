@@ -52,6 +52,8 @@ export type ServiceData = {
 };
 
 export type Action = {
+  name: string;
+  service: string;
   conditionKeys: Array<string>;
   resources: Array<{ name: string }>;
   description?: string;

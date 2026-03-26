@@ -33,6 +33,8 @@ export async function run() {
     for (const action of raw.Actions) {
       actions.push(`${reference.service}:${action.Name}`);
       serviceData.actions[action.Name] = {
+        name: action.Name,
+        service: reference.service,
         conditionKeys: action.ActionConditionKeys ?? [],
         resources: (action.Resources ?? []).map((r) => ({ name: r.Name })),
       };
