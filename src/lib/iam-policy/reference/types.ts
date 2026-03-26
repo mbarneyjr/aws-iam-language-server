@@ -41,6 +41,7 @@ export type RawReference = {
 
 export type ServiceData = {
   name: string;
+  url?: string;
   actions: Record<string, Action>;
   resources: Array<{
     name: string;
@@ -58,7 +59,8 @@ export type Action = {
   resourceTypes?: Array<{ name: string; required: boolean }>;
   dependentActions?: Array<string>;
   permissionOnly?: boolean;
-  url?: string;
+  operationUrl?: string;
+  iamUrl?: string;
 };
 
 export type ConditionKey = {

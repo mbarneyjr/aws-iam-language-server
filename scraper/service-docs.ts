@@ -54,7 +54,9 @@ async function scrapeAndMerge(slug: string): Promise<void> {
   if (!existsSync(servicePath)) return;
 
   const serviceData: ServiceData = JSON.parse(readFileSync(servicePath, 'utf-8'));
-  serviceData.url = `${BASE_URL}/${slug}`;
+  const servicePageUrl = `${BASE_URL}/${slug}`;
+  serviceData.url = servicePageUrl;
+  const slugId = slug.replace(/^list_/, '').replace(/\.html$/, '');
 
   const actionDocs = parseActionsTable($);
   for (const [name, docs] of Object.entries(actionDocs)) {
@@ -65,7 +67,8 @@ async function scrapeAndMerge(slug: string): Promise<void> {
       action.resourceTypes = docs.resourceTypes;
       action.dependentActions = docs.dependentActions.length > 0 ? docs.dependentActions : undefined;
       action.permissionOnly = docs.permissionOnly || undefined;
-      action.url = docs.url || undefined;
+      action.operationUrl = docs.operationUrl || undefined;
+      action.iamUrl = `${servicePageUrl}#${slugId}-${name}`;
     }
   }
 
@@ -86,7 +89,7 @@ type ScrapedAction = {
   resourceTypes: Array<{ name: string; required: boolean }>;
   dependentActions: string[];
   permissionOnly: boolean;
-  url: string;
+  operationUrl: string;
 };
 
 function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction> {
@@ -128,7 +131,7 @@ function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction>
     let actionName = actionLink.length > 0 ? actionLink.text().trim() : actionCell.text().trim();
     if (!actionName) return;
 
-    const url = actionLink.attr('href') ?? '';
+    const operationUrl = actionLink.attr('href') ?? '';
 
     const permissionOnly = actionCell.text().includes('[permission only]');
     actionName = actionName.replace(/\s*\[permission only\]\s*/, '').trim();
@@ -176,7 +179,7 @@ function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction>
       resourceTypes,
       dependentActions,
       permissionOnly,
-      url,
+      operationUrl,
     };
   });
 
