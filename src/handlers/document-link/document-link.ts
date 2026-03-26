@@ -1,4 +1,4 @@
-import type { DocumentLink, DocumentLinkParams, TextDocuments } from 'vscode-languageserver';
+import type { Connection, DocumentLink, DocumentLinkParams, TextDocuments } from 'vscode-languageserver';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
 import type { TreeManager } from '../../lib/treesitter/manager.ts';
@@ -7,6 +7,7 @@ export function documentLinkHandler(
   params: DocumentLinkParams,
   documents: TextDocuments<TextDocument>,
   _treeManager: TreeManager,
+  connection: Connection,
 ): DocumentLink[] {
   const document = documents.get(params.textDocument.uri);
   if (!document) return [];
@@ -41,6 +42,8 @@ export function documentLinkHandler(
       });
     }
   }
+
+  connection.console.debug(`Found ${links.length} document links in ${params.textDocument.uri}`);
 
   return links;
 }

@@ -1,4 +1,4 @@
-import type { CompletionItem, CompletionList, CompletionParams } from 'vscode-languageserver';
+import type { CompletionItem, CompletionList, CompletionParams, Connection } from 'vscode-languageserver';
 import { InsertTextFormat } from 'vscode-languageserver';
 import type { TextDocuments } from 'vscode-languageserver/node.js';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
@@ -32,6 +32,7 @@ export async function handleCompletionRequest(
   params: CompletionParams,
   _documents: TextDocuments<TextDocument>,
   treeManager: TreeManager,
+  connection: Connection,
 ): Promise<CompletionList> {
   const handler = treeManager.getLanguageHandler(params.textDocument.uri);
   if (!handler) return emptyResult;
@@ -41,6 +42,14 @@ export async function handleCompletionRequest(
   if (!cursorContext) return emptyResult;
 
   const location = resolvePolicyLocation(cursorContext);
+  connection.console.debug(
+    `Completion debug: ${JSON.stringify({
+      uri: params.textDocument.uri,
+      cursorContext,
+      location,
+      position: params.position,
+    })}`,
+  );
   const result = handleLocationCompletion(location, {
     handler,
     uri: params.textDocument.uri,
@@ -48,6 +57,10 @@ export async function handleCompletionRequest(
   });
 
   result.items = result.items.map(toSnippet);
+
+  connection.console.debug(
+    `Found ${result.items.length} completion items for ${params.textDocument.uri} at line ${position.line}, column ${position.column}`,
+  );
 
   return result;
 }

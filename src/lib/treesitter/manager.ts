@@ -1,3 +1,4 @@
+import type { Connection } from 'vscode-languageserver';
 import type { TreeBase } from './base.ts';
 import { TreeHcl } from './hcl.ts';
 import { TreeJson } from './json.ts';
@@ -18,8 +19,14 @@ export class TreeManager {
     hcl: null,
   };
   #uriToFormat = new Map<string, DocumentFormat>();
+  #connection: Connection;
+
+  constructor(connection: Connection) {
+    this.#connection = connection;
+  }
 
   async openDocument(uri: string, content: string, languageId: string) {
+    this.#connection.console.info(`Opening document: ${uri} with language ID: ${languageId}`);
     const format = TreeManager.#detectFormat(uri, languageId);
     if (!format) return;
     this.#uriToFormat.set(uri, format);
@@ -30,6 +37,7 @@ export class TreeManager {
   }
 
   async updateDocument(uri: string, content: string) {
+    this.#connection.console.debug(`Updating document: ${uri} with length: ${content.length}`);
     const format = this.#uriToFormat.get(uri);
     if (!format) return;
     if (!this.#trees[format]) {
@@ -39,6 +47,7 @@ export class TreeManager {
   }
 
   closeDocument(uri: string) {
+    this.#connection.console.info(`Closing document: ${uri}`);
     const format = this.#uriToFormat.get(uri);
     if (!format) return;
     if (this.#trees[format]) {

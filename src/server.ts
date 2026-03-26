@@ -8,10 +8,10 @@ import { TreeManager } from './lib/treesitter/manager.ts';
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
-const treeManager = new TreeManager();
+const treeManager = new TreeManager(connection);
 
 connection.onInitialize(async () => {
-  connection.console.log(`Starting the AWS IAM Policy Language Server`);
+  connection.console.log(`Started the AWS IAM Policy Language Server`);
   return {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
@@ -28,8 +28,8 @@ documents.onDidOpen(({ document }) => treeManager.openDocument(document.uri, doc
 documents.onDidChangeContent(({ document }) => treeManager.updateDocument(document.uri, document.getText()));
 documents.onDidClose(({ document }) => treeManager.closeDocument(document.uri));
 
-connection.onCompletion((params) => handleCompletionRequest(params, documents, treeManager));
-connection.onDocumentLinks((params) => documentLinkHandler(params, documents, treeManager));
+connection.onCompletion((params) => handleCompletionRequest(params, documents, treeManager, connection));
+connection.onDocumentLinks((params) => documentLinkHandler(params, documents, treeManager, connection));
 
 documents.listen(connection);
 connection.listen();

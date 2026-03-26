@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
-import type { TextDocuments } from 'vscode-languageserver';
+import type { Connection, TextDocuments } from 'vscode-languageserver';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
 import { loadCompletionTests } from '../../test-utils/test-cases/completion/index.ts';
 import { TreeManager } from '../lib/treesitter/manager.ts';
@@ -26,8 +26,17 @@ const categories = [
 
 describe('handleCompletionRequest', async () => {
   let treeManager: TreeManager;
+  const connection = {
+    console: {
+      log: () => {},
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+    },
+  } as unknown as Connection;
   before(async () => {
-    treeManager = new TreeManager();
+    treeManager = new TreeManager(connection);
   });
 
   for (const category of categories) {
@@ -41,6 +50,7 @@ describe('handleCompletionRequest', async () => {
             { position: testCase.position, textDocument: { uri } },
             textDocumentsStub,
             treeManager,
+            connection,
           );
           const labels = response.items.map((item) => item.label);
           if (testCase.exact) {
