@@ -166,11 +166,12 @@ export class TreeYaml extends TreeBase {
   #resolveExtendedContext(cursorNode: Node, statementMapping: Node, position: Position): CursorContext | null {
     const resolved = this.#resolveWithinMapping(statementMapping, position);
     if (!resolved) return null;
-    const partial = this.#extractPartial(cursorNode, position);
+    const { partial, value } = this.#extractPartialAndValue(cursorNode, position);
     return {
       keys: resolved.keys,
       role: resolved.role,
       partial,
+      value,
       policyFormat: 'standard',
     };
   }
@@ -213,7 +214,7 @@ export class TreeYaml extends TreeBase {
           return {
             keys: [],
             role: 'key',
-            partial: this.#extractPartial(node, position),
+            ...this.#extractPartialAndValue(node, position),
             policyFormat: 'standard',
           };
         }
@@ -222,7 +223,7 @@ export class TreeYaml extends TreeBase {
         return {
           keys: [],
           role: 'key',
-          partial: this.#extractPartial(node, position),
+          ...this.#extractPartialAndValue(node, position),
           policyFormat: 'standard',
         };
       }
@@ -248,7 +249,7 @@ export class TreeYaml extends TreeBase {
           return {
             keys: [],
             role: 'key',
-            partial: this.#extractPartial(node, position),
+            ...this.#extractPartialAndValue(node, position),
             policyFormat: 'standard',
           };
         }
@@ -424,9 +425,11 @@ export class TreeYaml extends TreeBase {
     }
 
     if (role === null) role = 'key';
-    const partial = colonPartial || this.#extractPartial(cursorNode, position);
+    const { partial: extractedPartial, value: extractedValue } = this.#extractPartialAndValue(cursorNode, position);
+    const partial = colonPartial || extractedPartial;
+    const value = colonPartial ? colonPartial : extractedValue;
 
-    return { keys, role, partial };
+    return { keys, role, partial, value };
   }
 
   /**
@@ -620,29 +623,39 @@ export class TreeYaml extends TreeBase {
   }
 
   /**
-   * Extract the partial text the user has typed, from the nearest scalar node
-   * up to the cursor position.
+   * Extract the partial text (up to cursor) and full value from the nearest
+   * scalar node.
    */
-  #extractPartial(node: Node, position: Position): string {
+  #extractPartialAndValue(node: Node, position: Position): { partial: string; value: string } {
     let current: Node | null = node;
     while (current) {
       if (current.type === 'string_scalar') {
-        return this.#sliceToPosition(current.text, current.startPosition.column, position, node);
+        return this.#sliceToPositionAndValue(current.text, current.startPosition.column, position, node);
       }
       if (current.type === 'double_quote_scalar' || current.type === 'single_quote_scalar') {
-        return this.#sliceToPosition(current.text.slice(1, -1), current.startPosition.column + 1, position, node);
+        return this.#sliceToPositionAndValue(
+          current.text.slice(1, -1),
+          current.startPosition.column + 1,
+          position,
+          node,
+        );
       }
       if (current.type === 'block_mapping' || current.type === 'block_mapping_pair') break;
       current = current.parent;
     }
-    return '';
+    return { partial: '', value: '' };
   }
 
-  #sliceToPosition(text: string, startColumn: number, position: Position, node: Node): string {
+  #sliceToPositionAndValue(
+    text: string,
+    startColumn: number,
+    position: Position,
+    node: Node,
+  ): { partial: string; value: string } {
     if (position.line === node.startPosition.row) {
-      return text.slice(0, position.column - startColumn);
+      return { partial: text.slice(0, position.column - startColumn), value: text };
     }
-    return text;
+    return { partial: text, value: text };
   }
 
   /**
@@ -691,6 +704,7 @@ export class TreeYaml extends TreeBase {
           keys: [keyText],
           role: 'value',
           partial: '',
+          value: '',
           policyFormat: 'standard',
         };
       }
@@ -706,10 +720,12 @@ export class TreeYaml extends TreeBase {
         const colonSuffix =
           errorNode.endPosition.row === position.line && position.column > errorNode.endPosition.column ? ':' : '';
 
+        const fullValue = valueText + colonSuffix;
         return {
           keys: [pairKey],
           role: 'value',
-          partial: valueText + colonSuffix,
+          partial: fullValue,
+          value: fullValue,
           policyFormat: 'standard',
         };
       }
@@ -727,11 +743,12 @@ export class TreeYaml extends TreeBase {
     // If we found a key before cursor line and the cursor is in its value area
     // (e.g., `Resource:\n  - !Sub "arn:` where the open quote breaks the parse)
     if (lastKey) {
-      const partial = this.#extractPartialFromErrorNode(errorNode, position);
+      const { partial, value } = this.#extractPartialAndValueFromErrorNode(errorNode, position);
       return {
         keys: [lastKey],
         role: 'value',
         partial,
+        value,
         policyFormat: 'standard',
       };
     }
@@ -740,27 +757,35 @@ export class TreeYaml extends TreeBase {
   }
 
   /**
-   * Extract the partial text from an ERROR node for the cursor line.
+   * Extract the partial text and full value from an ERROR node for the cursor line.
    * Scans ERROR children on the cursor line to find the last child before/at the
-   * cursor, then takes the substring from its end to the cursor column.
+   * cursor, then takes the substring from its end to the cursor column (partial)
+   * and to the next child or end of content (value).
    */
-  #extractPartialFromErrorNode(errorNode: Node, position: Position): string {
-    // Find the rightmost child on the cursor line that ends at or before the cursor
+  #extractPartialAndValueFromErrorNode(errorNode: Node, position: Position): { partial: string; value: string } {
+    // Find the rightmost child on the cursor line that ends at or before the cursor,
+    // and the leftmost child that starts after the cursor
     let afterColumn = 0;
+    let nextChildColumn: number | null = null;
     for (const child of errorNode.children) {
       if (child.startPosition.row !== position.line) continue;
       if (child.endPosition.column <= position.column) {
         afterColumn = child.endPosition.column;
+      } else if (nextChildColumn === null && child.startPosition.column > position.column) {
+        nextChildColumn = child.startPosition.column;
       }
     }
 
     // Extract from the ERROR node's text: find the cursor line and slice
     const lines = errorNode.text.split('\n');
     const lineIndex = position.line - errorNode.startPosition.row;
-    if (lineIndex < 0 || lineIndex >= lines.length) return '';
+    if (lineIndex < 0 || lineIndex >= lines.length) return { partial: '', value: '' };
     const line = lines[lineIndex];
     const startColumn = lineIndex === 0 ? errorNode.startPosition.column : 0;
-    return line.slice(afterColumn - startColumn, position.column - startColumn);
+    const partial = line.slice(afterColumn - startColumn, position.column - startColumn);
+    const valueEnd = nextChildColumn !== null ? nextChildColumn - startColumn : line.length;
+    const value = line.slice(afterColumn - startColumn, valueEnd);
+    return { partial, value };
   }
 
   #getPairValueText(pair: Node): string | null {

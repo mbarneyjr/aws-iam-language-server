@@ -131,9 +131,9 @@ export class TreeJson extends TreeBase {
     }
 
     if (role === null) role = 'key';
-    const partial = this.#extractPartial(cursorNode, position);
+    const { partial, value } = this.#extractPartialAndValue(cursorNode, position);
 
-    return { keys, role, partial };
+    return { keys, role, partial, value };
   }
 
   /**
@@ -242,22 +242,23 @@ export class TreeJson extends TreeBase {
   }
 
   /**
-   * Extract the partial text the user has typed, from the nearest string_content
-   * node up to the cursor position.
+   * Extract the partial text (up to cursor) and full value from the nearest
+   * string_content node.
    */
-  #extractPartial(node: Node, position: Position): string {
+  #extractPartialAndValue(node: Node, position: Position): { partial: string; value: string } {
     let current: Node | null = node;
     while (current) {
       if (current.type === 'string_content') {
+        const value = current.text;
         if (position.line === current.startPosition.row) {
-          return current.text.slice(0, position.column - current.startPosition.column);
+          return { partial: value.slice(0, position.column - current.startPosition.column), value };
         }
-        return current.text;
+        return { partial: value, value };
       }
       if (current.type === 'object' || current.type === 'pair') break;
       current = current.parent;
     }
-    return '';
+    return { partial: '', value: '' };
   }
 
   /**

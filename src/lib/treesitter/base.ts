@@ -14,6 +14,7 @@ export type CursorContext = {
   keys: string[];
   role: 'key' | 'value';
   partial: string;
+  value: string;
   policyFormat: PolicyFormat;
 };
 
