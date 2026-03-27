@@ -58,3 +58,14 @@ This language server provides completion on:
 - resources (progressive arn component suggestions, full arn completions for action-specific arns)
 - condition operators (`StringLike`, `ForAnyValue:*`, etc)
 - condition keys (global keys like `aws:RequestTag/${TagKey}`, action-specific keys like `s3:TlsVersion`)
+
+### Diagnostics
+
+This language server will provide diagnostics for some IAM policy issues, including:
+
+- no extra policy document keys are specified
+- no missing keys in a statement, (effect, action, resource or effect, action, principal)
+- no duplicate keys in a statement (including "not" variants like action/not action)
+- ensuring `Sid` uniqueness within a policy document
+- effect has a valid value
+- defined actions are valid, or wildcards resolve to valid actions

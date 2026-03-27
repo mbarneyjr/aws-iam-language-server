@@ -3,6 +3,7 @@
 import { createConnection, ProposedFeatures, TextDocumentSyncKind, TextDocuments } from 'vscode-languageserver/node.js';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { handleCompletionRequest } from './handlers/completion/index.ts';
+import { diagnosticsHandler } from './handlers/diagnostics/diagnostics.ts';
 import { documentLinkHandler } from './handlers/document-link/document-link.ts';
 import { TreeManager } from './lib/treesitter/manager.ts';
 
@@ -24,9 +25,17 @@ connection.onInitialize(async () => {
   };
 });
 
-documents.onDidOpen(({ document }) => treeManager.openDocument(document.uri, document.getText(), document.languageId));
-documents.onDidChangeContent(({ document }) => treeManager.updateDocument(document.uri, document.getText()));
-documents.onDidClose(({ document }) => treeManager.closeDocument(document.uri));
+documents.onDidOpen(async ({ document }) => {
+  await treeManager.openDocument(document.uri, document.getText(), document.languageId);
+  await diagnosticsHandler(document, treeManager, connection);
+});
+documents.onDidChangeContent(async ({ document }) => {
+  await treeManager.updateDocument(document.uri, document.getText());
+  await diagnosticsHandler(document, treeManager, connection);
+});
+documents.onDidClose(async ({ document }) => {
+  await treeManager.closeDocument(document.uri);
+});
 
 connection.onCompletion((params) => handleCompletionRequest(params, documents, treeManager, connection));
 connection.onDocumentLinks((params) => documentLinkHandler(params, documents, treeManager, connection));
