@@ -79,9 +79,11 @@ export class ServiceReference {
     return ServiceReference.#globalConditionKeys;
   }
 
-  static getAction(service: string, actionName: string): Action | undefined {
+  static getAction(action: string): Action | undefined {
     try {
-      return ServiceReference.getServiceData(service).actions[actionName];
+      const serviceName = action.split(':')[0];
+      const actionName = action.split(':')[1];
+      return ServiceReference.getServiceData(serviceName).actions[actionName];
     } catch {
       return undefined;
     }

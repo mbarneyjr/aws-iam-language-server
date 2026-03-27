@@ -1,8 +1,16 @@
 import { resolve } from 'node:path';
 import type { Node } from 'web-tree-sitter';
 import { Language } from 'web-tree-sitter';
-import type { CursorContext, Position, StatementContext } from './base.ts';
-import { TreeBase } from './base.ts';
+import type {
+  CursorContext,
+  PolicyDocumentNode,
+  Position,
+  Range,
+  StatementContext,
+  StatementEntry,
+  StatementValue,
+} from './base.ts';
+import { nodeRange, TreeBase } from './base.ts';
 
 export class TreeYaml extends TreeBase {
   static async init() {
@@ -70,6 +78,151 @@ export class TreeYaml extends TreeBase {
     if (!cursorPath || cursorPath.role !== 'key') return [];
 
     return this.#collectExistingKeysAtPath(match.mapping, cursorPath.keys);
+  }
+
+  getAllPolicyDocuments(uri: string): PolicyDocumentNode[] {
+    const root = this.getTree(uri)?.rootNode;
+    if (!root) return [];
+
+    const mappings = this.#findAllStatementMappings(root);
+
+    // Group by parent block_sequence (each sequence = one policy document)
+    const groups = new Map<number, { sequence: Node; mappings: Node[] }>();
+    for (const mapping of mappings) {
+      const sequence = this.#getParentStatementSequence(mapping);
+      if (!sequence) continue;
+      const existing = groups.get(sequence.id);
+      if (existing) {
+        existing.mappings.push(mapping);
+      } else {
+        groups.set(sequence.id, { sequence, mappings: [mapping] });
+      }
+    }
+
+    const results: PolicyDocumentNode[] = [];
+    for (const group of groups.values()) {
+      results.push({
+        range: nodeRange(group.sequence),
+        policyFormat: 'standard',
+        statements: group.mappings.map((mapping) => ({
+          range: nodeRange(mapping),
+          entries: this.#buildStatementEntries(mapping),
+        })),
+      });
+    }
+    return results;
+  }
+
+  #buildStatementEntries(mapping: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of mapping.namedChildren) {
+      if (child.type !== 'block_mapping_pair') continue;
+      const key = this.#getPairKeyText(child);
+      if (!key) continue;
+
+      const keyFlow = child.namedChildren.find((c) => c.type === 'flow_node');
+      const keyRange: Range = keyFlow ? nodeRange(keyFlow) : nodeRange(child);
+
+      const values = this.#readPairStatementValues(child);
+      const valueRange = this.#getPairValueRange(child);
+
+      const nestedKeys = new Set(['Condition', 'Principal', 'NotPrincipal']);
+      let children: StatementEntry[] | undefined;
+      if (nestedKeys.has(key)) {
+        const nestedMapping = this.#findValueBlockMapping(child);
+        if (nestedMapping) {
+          children = this.#buildNestedEntries(nestedMapping);
+        }
+      }
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
+  }
+
+  #buildNestedEntries(mapping: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of mapping.namedChildren) {
+      if (child.type !== 'block_mapping_pair') continue;
+      const key = this.#getPairKeyText(child);
+      if (!key) continue;
+
+      const keyFlow = child.namedChildren.find((c) => c.type === 'flow_node');
+      const keyRange: Range = keyFlow ? nodeRange(keyFlow) : nodeRange(child);
+
+      const values = this.#readPairStatementValues(child);
+      const valueRange = this.#getPairValueRange(child);
+
+      // Recurse for deeper nesting (Condition operator → key → values)
+      const nestedMapping = this.#findValueBlockMapping(child);
+      let children: StatementEntry[] | undefined;
+      if (nestedMapping) {
+        children = this.#buildNestedEntries(nestedMapping);
+      }
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
+  }
+
+  #readPairStatementValues(pair: Node): StatementValue[] {
+    if (pair.namedChildren.length < 2) return [];
+    const valueNode = pair.namedChildren[1];
+
+    // Direct flow_node scalar
+    if (valueNode.type === 'flow_node') {
+      return this.#flowNodeToStatementValue(valueNode);
+    }
+
+    // block_node wrapping
+    const inner = valueNode.type === 'block_node' ? (valueNode.namedChildren[0] ?? null) : valueNode;
+    if (!inner) return [];
+
+    if (inner.type === 'flow_node') {
+      return this.#flowNodeToStatementValue(inner);
+    }
+
+    // Block sequence
+    if (inner.type === 'block_sequence') {
+      const values: StatementValue[] = [];
+      for (const item of inner.namedChildren) {
+        if (item.type !== 'block_sequence_item') continue;
+        const flowNode = item.namedChildren.find((child) => child.type === 'flow_node');
+        if (flowNode) {
+          values.push(...this.#flowNodeToStatementValue(flowNode));
+        }
+      }
+      return values;
+    }
+
+    // Flow sequence
+    if (inner.type === 'flow_sequence') {
+      const values: StatementValue[] = [];
+      for (const flowItem of inner.namedChildren) {
+        if (flowItem.type !== 'flow_node') continue;
+        values.push(...this.#flowNodeToStatementValue(flowItem));
+      }
+      return values;
+    }
+
+    return [];
+  }
+
+  #flowNodeToStatementValue(flowNode: Node): StatementValue[] {
+    const text = this.#getScalarText(flowNode);
+    if (text === null) return [];
+    return [{ text, range: nodeRange(flowNode) }];
+  }
+
+  #getPairValueRange(pair: Node): Range {
+    if (pair.namedChildren.length < 2) {
+      // No value — zero-width range at key end
+      return {
+        start: { line: pair.endPosition.row, column: pair.endPosition.column },
+        end: { line: pair.endPosition.row, column: pair.endPosition.column },
+      };
+    }
+    return nodeRange(pair.namedChildren[1]);
   }
 
   /**

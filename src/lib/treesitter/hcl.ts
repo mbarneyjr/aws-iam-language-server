@@ -1,8 +1,16 @@
 import { resolve } from 'node:path';
 import type { Node } from 'web-tree-sitter';
 import { Language } from 'web-tree-sitter';
-import type { CursorContext, Position, StatementContext } from './base.ts';
-import { TreeBase } from './base.ts';
+import type {
+  CursorContext,
+  PolicyDocumentNode,
+  Position,
+  Range,
+  StatementContext,
+  StatementEntry,
+  StatementValue,
+} from './base.ts';
+import { nodeRange, TreeBase } from './base.ts';
 
 export class TreeHcl extends TreeBase {
   static async init() {
@@ -71,6 +79,280 @@ export class TreeHcl extends TreeBase {
     }
 
     return [];
+  }
+
+  getAllPolicyDocuments(uri: string): PolicyDocumentNode[] {
+    const tree = this.getTree(uri);
+    if (!tree) return [];
+
+    const root = tree.rootNode;
+    const results: PolicyDocumentNode[] = [];
+
+    // Block mode: statement { ... } — group by parent data block's body
+    const blocks = this.#findAllStatementBlocks(root);
+    const blockGroups = new Map<number, { parentBody: Node; blocks: Node[] }>();
+    for (const block of blocks) {
+      const parentBody = block.parent;
+      if (!parentBody || parentBody.type !== 'body') continue;
+      const existing = blockGroups.get(parentBody.id);
+      if (existing) {
+        existing.blocks.push(block);
+      } else {
+        blockGroups.set(parentBody.id, { parentBody, blocks: [block] });
+      }
+    }
+    for (const group of blockGroups.values()) {
+      results.push({
+        range: nodeRange(group.parentBody),
+        policyFormat: 'hcl-block',
+        statements: group.blocks.map((block) => {
+          const body = block.namedChildren.find((child) => child.type === 'body');
+          return {
+            range: nodeRange(block),
+            entries: body ? this.#buildBlockStatementEntries(body) : [],
+          };
+        }),
+      });
+    }
+
+    // Jsonencode mode: jsonencode({ Statement = [...] }) — group by parent tuple
+    const objects = this.#findAllJsonencodeStatementObjects(root);
+    const tupleGroups = new Map<number, { tuple: Node; objects: Node[] }>();
+    for (const object of objects) {
+      const tuple = this.#findParentTuple(object);
+      if (!tuple) continue;
+      const existing = tupleGroups.get(tuple.id);
+      if (existing) {
+        existing.objects.push(object);
+      } else {
+        tupleGroups.set(tuple.id, { tuple, objects: [object] });
+      }
+    }
+    for (const group of tupleGroups.values()) {
+      results.push({
+        range: nodeRange(group.tuple),
+        policyFormat: 'standard',
+        statements: group.objects.map((object) => ({
+          range: nodeRange(object),
+          entries: this.#buildJsonencodeStatementEntries(object),
+        })),
+      });
+    }
+
+    return results;
+  }
+
+  #findParentTuple(object: Node): Node | null {
+    let current: Node | null = object.parent;
+    while (current && (current.type === 'collection_value' || current.type === 'expression')) {
+      current = current.parent;
+    }
+    return current?.type === 'tuple' ? current : null;
+  }
+
+  #findAllStatementBlocks(root: Node): Node[] {
+    const results: Node[] = [];
+    const visit = (node: Node) => {
+      if (node.type === 'block' && this.#getBlockIdentifier(node) === 'statement') {
+        results.push(node);
+        return; // skip descendants
+      }
+      for (const child of node.namedChildren) {
+        visit(child);
+      }
+    };
+    visit(root);
+    return results;
+  }
+
+  #findAllJsonencodeStatementObjects(root: Node): Node[] {
+    const results: Node[] = [];
+    const visit = (node: Node) => {
+      if (node.type === 'object' && this.#isInsideStatementTuple(node)) {
+        results.push(node);
+        return; // skip descendants
+      }
+      for (const child of node.namedChildren) {
+        visit(child);
+      }
+    };
+    visit(root);
+    return results;
+  }
+
+  #buildBlockStatementEntries(body: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of body.namedChildren) {
+      if (child.type === 'attribute') {
+        const id = child.namedChildren.find((c) => c.type === 'identifier');
+        if (!id) continue;
+
+        const keyRange: Range = nodeRange(id);
+        const expression = child.namedChildren.find((c) => c.type === 'expression');
+        const values = expression ? this.#readExpressionStatementValues(expression) : [];
+        const valueRange: Range = expression
+          ? nodeRange(expression)
+          : {
+              start: { line: child.endPosition.row, column: child.endPosition.column },
+              end: { line: child.endPosition.row, column: child.endPosition.column },
+            };
+
+        entries.push({ key: id.text, keyRange, values, valueRange });
+      } else if (child.type === 'block') {
+        const blockId = this.#getBlockIdentifier(child);
+        if (!blockId) continue;
+
+        const keyIdNode = child.namedChildren.find((c) => c.type === 'identifier');
+        const keyRange: Range = keyIdNode ? nodeRange(keyIdNode) : nodeRange(child);
+        const blockBody = child.namedChildren.find((c) => c.type === 'body');
+        const children = blockBody ? this.#buildBlockStatementEntries(blockBody) : [];
+        const valueRange: Range = blockBody ? nodeRange(blockBody) : nodeRange(child);
+
+        entries.push({ key: blockId, keyRange, values: [], valueRange, children });
+      }
+    }
+    return entries;
+  }
+
+  #readExpressionStatementValues(expression: Node): StatementValue[] {
+    // Single string literal
+    const literal = expression.namedChildren.find((child) => child.type === 'literal_value');
+    if (literal) {
+      const string = literal.namedChildren.find((child) => child.type === 'string_lit');
+      const template = string?.namedChildren.find((child) => child.type === 'template_literal');
+      if (template?.text) return [{ text: template.text, range: nodeRange(template) }];
+      return [];
+    }
+
+    // Tuple of strings
+    let tuple = expression.namedChildren.find((child) => child.type === 'tuple');
+    if (!tuple) {
+      const collectionValue = expression.namedChildren.find((child) => child.type === 'collection_value');
+      tuple = collectionValue?.namedChildren.find((child) => child.type === 'tuple') ?? undefined;
+    }
+    if (tuple) {
+      const values: StatementValue[] = [];
+      for (const element of tuple.namedChildren) {
+        const elementExpression = element.type === 'expression' ? element : null;
+        const elementLiteral = elementExpression?.namedChildren.find((child) => child.type === 'literal_value');
+        const elementString = elementLiteral?.namedChildren.find((child) => child.type === 'string_lit');
+        const elementTemplate = elementString?.namedChildren.find((child) => child.type === 'template_literal');
+        if (elementTemplate?.text) values.push({ text: elementTemplate.text, range: nodeRange(elementTemplate) });
+      }
+      return values;
+    }
+
+    return [];
+  }
+
+  #buildJsonencodeStatementEntries(object: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of object.namedChildren) {
+      if (child.type !== 'object_elem') continue;
+      const key = this.#getObjectElemKey(child);
+      if (!key) continue;
+
+      const keyExpression = child.namedChildren.find((c) => c.type === 'expression');
+      const keyId = keyExpression?.namedChildren
+        .find((c) => c.type === 'variable_expr')
+        ?.namedChildren.find((c) => c.type === 'identifier');
+      const keyRange: Range = keyId ? nodeRange(keyId) : nodeRange(child);
+
+      const expressions = child.namedChildren.filter((c) => c.type === 'expression');
+      const valueExpression = expressions.length >= 2 ? expressions[1] : null;
+      const values = valueExpression ? this.#readJsonencodeExpressionStatementValues(valueExpression) : [];
+      const valueRange: Range = valueExpression
+        ? nodeRange(valueExpression)
+        : {
+            start: { line: child.endPosition.row, column: child.endPosition.column },
+            end: { line: child.endPosition.row, column: child.endPosition.column },
+          };
+
+      const nestedKeys = new Set(['Condition', 'Principal', 'NotPrincipal']);
+      let children: StatementEntry[] | undefined;
+      if (nestedKeys.has(key) && valueExpression) {
+        let nestedObject = valueExpression.namedChildren.find((c) => c.type === 'object');
+        if (!nestedObject) {
+          const collectionValue = valueExpression.namedChildren.find((c) => c.type === 'collection_value');
+          nestedObject = collectionValue?.namedChildren.find((c) => c.type === 'object') ?? undefined;
+        }
+        if (nestedObject) {
+          children = this.#buildJsonencodeNestedEntries(nestedObject);
+        }
+      }
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
+  }
+
+  #readJsonencodeExpressionStatementValues(expression: Node): StatementValue[] {
+    // Single string literal
+    const literal = expression.namedChildren.find((child) => child.type === 'literal_value');
+    if (literal) {
+      const string = literal.namedChildren.find((child) => child.type === 'string_lit');
+      const template = string?.namedChildren.find((child) => child.type === 'template_literal');
+      if (template?.text) return [{ text: template.text, range: nodeRange(template) }];
+      return [];
+    }
+
+    // Tuple
+    let tuple = expression.namedChildren.find((child) => child.type === 'tuple');
+    if (!tuple) {
+      const collectionValue = expression.namedChildren.find((child) => child.type === 'collection_value');
+      tuple = collectionValue?.namedChildren.find((child) => child.type === 'tuple') ?? undefined;
+    }
+    if (tuple) {
+      const values: StatementValue[] = [];
+      for (const element of tuple.namedChildren) {
+        const elementExpression = element.type === 'expression' ? element : null;
+        const elementLiteral = elementExpression?.namedChildren.find((child) => child.type === 'literal_value');
+        const elementString = elementLiteral?.namedChildren.find((child) => child.type === 'string_lit');
+        const elementTemplate = elementString?.namedChildren.find((child) => child.type === 'template_literal');
+        if (elementTemplate?.text) values.push({ text: elementTemplate.text, range: nodeRange(elementTemplate) });
+      }
+      return values;
+    }
+
+    return [];
+  }
+
+  #buildJsonencodeNestedEntries(object: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of object.namedChildren) {
+      if (child.type !== 'object_elem') continue;
+      const key = this.#getObjectElemKey(child);
+      if (!key) continue;
+
+      const keyExpression = child.namedChildren.find((c) => c.type === 'expression');
+      const keyId = keyExpression?.namedChildren
+        .find((c) => c.type === 'variable_expr')
+        ?.namedChildren.find((c) => c.type === 'identifier');
+      const keyRange: Range = keyId ? nodeRange(keyId) : nodeRange(child);
+
+      const expressions = child.namedChildren.filter((c) => c.type === 'expression');
+      const valueExpression = expressions.length >= 2 ? expressions[1] : null;
+      const values = valueExpression ? this.#readJsonencodeExpressionStatementValues(valueExpression) : [];
+      const valueRange: Range = valueExpression
+        ? nodeRange(valueExpression)
+        : {
+            start: { line: child.endPosition.row, column: child.endPosition.column },
+            end: { line: child.endPosition.row, column: child.endPosition.column },
+          };
+
+      let nestedObject: Node | undefined;
+      if (valueExpression) {
+        nestedObject = valueExpression.namedChildren.find((c) => c.type === 'object');
+        if (!nestedObject) {
+          const collectionValue = valueExpression.namedChildren.find((c) => c.type === 'collection_value');
+          nestedObject = collectionValue?.namedChildren.find((c) => c.type === 'object') ?? undefined;
+        }
+      }
+      const children = nestedObject ? this.#buildJsonencodeNestedEntries(nestedObject) : undefined;
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
   }
 
   // ---------------------------------------------------------------------------

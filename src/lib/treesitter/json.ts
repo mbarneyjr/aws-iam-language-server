@@ -1,8 +1,16 @@
 import { resolve } from 'node:path';
 import type { Node } from 'web-tree-sitter';
 import { Language } from 'web-tree-sitter';
-import type { CursorContext, Position, StatementContext } from './base.ts';
-import { TreeBase } from './base.ts';
+import type {
+  CursorContext,
+  PolicyDocumentNode,
+  Position,
+  Range,
+  StatementContext,
+  StatementEntry,
+  StatementValue,
+} from './base.ts';
+import { nodeRange, TreeBase } from './base.ts';
 
 export class TreeJson extends TreeBase {
   static async init() {
@@ -65,6 +73,141 @@ export class TreeJson extends TreeBase {
     if (!statementObject) return [];
 
     return this.#collectExistingKeys(this.#findInnermostObject(node, statementObject));
+  }
+
+  getAllPolicyDocuments(uri: string): PolicyDocumentNode[] {
+    const tree = this.getTree(uri);
+    if (!tree) return [];
+
+    const objects = this.#findAllStatementObjects(tree.rootNode);
+
+    // Group by parent array (each Statement array = one policy document)
+    const groups = new Map<number, { array: Node; objects: Node[] }>();
+    for (const object of objects) {
+      const array = object.parent;
+      if (!array || array.type !== 'array') continue;
+      const existing = groups.get(array.id);
+      if (existing) {
+        existing.objects.push(object);
+      } else {
+        groups.set(array.id, { array, objects: [object] });
+      }
+    }
+
+    const results: PolicyDocumentNode[] = [];
+    for (const group of groups.values()) {
+      results.push({
+        range: nodeRange(group.array),
+        policyFormat: 'standard',
+        statements: group.objects.map((object) => ({
+          range: nodeRange(object),
+          entries: this.#buildStatementEntries(object),
+        })),
+      });
+    }
+    return results;
+  }
+
+  #findAllStatementObjects(root: Node): Node[] {
+    const results: Node[] = [];
+    const visit = (node: Node) => {
+      if (node.type === 'object' && this.#isInsideStatementArray(node)) {
+        results.push(node);
+        return; // skip descendants
+      }
+      for (const child of node.namedChildren) {
+        visit(child);
+      }
+    };
+    visit(root);
+    return results;
+  }
+
+  #buildStatementEntries(object: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of object.namedChildren) {
+      if (child.type !== 'pair') continue;
+      const key = this.#getPairKeyText(child);
+      if (!key) continue;
+
+      const keyString = child.namedChildren[0];
+      const keyRange: Range = keyString ? nodeRange(keyString) : nodeRange(child);
+
+      const values = this.#readPairStatementValues(child);
+      const valueRange = this.#getPairValueRange(child);
+
+      const nestedKeys = new Set(['Condition', 'Principal', 'NotPrincipal']);
+      let children: StatementEntry[] | undefined;
+      if (nestedKeys.has(key)) {
+        const valueNode = child.namedChildren[1];
+        if (valueNode?.type === 'object') {
+          children = this.#buildNestedEntries(valueNode);
+        }
+      }
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
+  }
+
+  #buildNestedEntries(object: Node): StatementEntry[] {
+    const entries: StatementEntry[] = [];
+    for (const child of object.namedChildren) {
+      if (child.type !== 'pair') continue;
+      const key = this.#getPairKeyText(child);
+      if (!key) continue;
+
+      const keyString = child.namedChildren[0];
+      const keyRange: Range = keyString ? nodeRange(keyString) : nodeRange(child);
+
+      const values = this.#readPairStatementValues(child);
+      const valueRange = this.#getPairValueRange(child);
+
+      const valueNode = child.namedChildren[1];
+      let children: StatementEntry[] | undefined;
+      if (valueNode?.type === 'object') {
+        children = this.#buildNestedEntries(valueNode);
+      }
+
+      entries.push({ key, keyRange, values, valueRange, ...(children ? { children } : {}) });
+    }
+    return entries;
+  }
+
+  #readPairStatementValues(pair: Node): StatementValue[] {
+    const valueNode = pair.namedChildren[1];
+    if (!valueNode) return [];
+
+    if (valueNode.type === 'string') {
+      const content = valueNode.namedChildren.find((child) => child.type === 'string_content');
+      if (!content?.text) return [];
+      return [{ text: content.text, range: nodeRange(content) }];
+    }
+
+    if (valueNode.type === 'array') {
+      const values: StatementValue[] = [];
+      for (const element of valueNode.namedChildren) {
+        if (element.type !== 'string') continue;
+        const content = element.namedChildren.find((child) => child.type === 'string_content');
+        if (content?.text) {
+          values.push({ text: content.text, range: nodeRange(content) });
+        }
+      }
+      return values;
+    }
+
+    return [];
+  }
+
+  #getPairValueRange(pair: Node): Range {
+    const valueNode = pair.namedChildren[1];
+    if (!valueNode) {
+      return {
+        start: { line: pair.endPosition.row, column: pair.endPosition.column },
+        end: { line: pair.endPosition.row, column: pair.endPosition.column },
+      };
+    }
+    return nodeRange(valueNode);
   }
 
   #resolveCursorContext(node: Node, statementObject: Node, position: Position): CursorContext | null {

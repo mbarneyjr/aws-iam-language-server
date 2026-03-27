@@ -1,4 +1,4 @@
-import type { Language, Tree } from 'web-tree-sitter';
+import type { Language, Node, Tree } from 'web-tree-sitter';
 import { Parser } from 'web-tree-sitter';
 
 await Parser.init();
@@ -7,6 +7,39 @@ export type Position = {
   line: number;
   column: number;
 };
+
+export type Range = { start: Position; end: Position };
+
+export type StatementValue = {
+  text: string;
+  range: Range;
+};
+
+export type StatementEntry = {
+  key: string;
+  keyRange: Range;
+  values: StatementValue[];
+  valueRange: Range;
+  children?: StatementEntry[];
+};
+
+export type StatementNode = {
+  range: Range;
+  entries: StatementEntry[];
+};
+
+export type PolicyDocumentNode = {
+  range: Range;
+  policyFormat: PolicyFormat;
+  statements: StatementNode[];
+};
+
+export function nodeRange(node: Node): Range {
+  return {
+    start: { line: node.startPosition.row, column: node.startPosition.column },
+    end: { line: node.endPosition.row, column: node.endPosition.column },
+  };
+}
 
 export type PolicyFormat = 'standard' | 'hcl-block';
 
@@ -87,5 +120,9 @@ export class TreeBase {
 
   getSiblingKeys(_uri: string, _position: Position): string[] {
     throw new Error('getSiblingKeys must be implemented by a subclass');
+  }
+
+  getAllPolicyDocuments(_uri: string): PolicyDocumentNode[] {
+    throw new Error('getAllPolicyDocuments must be implemented by a subclass');
   }
 }
