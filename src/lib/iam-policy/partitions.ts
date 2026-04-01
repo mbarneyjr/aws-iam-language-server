@@ -49,3 +49,16 @@ export const partitions = {
     ],
   },
 } as const;
+
+type Partition = keyof typeof partitions;
+
+export function isValidPartition(input: string): input is Partition {
+  return Object.keys(partitions).includes(input);
+}
+
+export function isRegionValidForPartition<T extends Partition>(
+  partition: T,
+  input: string,
+): input is (typeof partitions)[T]['regions'][number]['id'] {
+  return partitions[partition].regions.some((r) => r.id === input);
+}

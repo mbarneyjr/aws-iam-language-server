@@ -1,12 +1,25 @@
 import type { Diagnostic } from 'vscode-languageclient';
-import { partitions } from '../../lib/iam-policy/partitions.ts';
-import type { StatementEntry, StatementValue } from '../../lib/treesitter/base.ts';
+import { isRegionValidForPartition, isValidPartition, partitions } from '../../lib/iam-policy/partitions.ts';
+import type { Range, StatementEntry, StatementValue } from '../../lib/treesitter/base.ts';
 import { ElementValidator } from './base.ts';
 import { createDiagnostic } from './utils.ts';
 
-const validPartitions = new Set(Object.keys(partitions));
-const validRegions: Set<string> = new Set(Object.values(partitions).flatMap((p) => p.regions.map((r) => r.id)));
+const validPartitions = Object.keys(partitions);
 const accountIdPattern = /^\d{12}$/;
+
+function segmentRange(value: StatementValue, segmentIndex: number): Range {
+  const segments = value.text.split(':');
+  let offset = 0;
+  for (let i = 0; i < segmentIndex; i++) {
+    offset += segments[i].length + 1;
+  }
+  const startColumn = value.range.start.column + offset;
+  const endColumn = startColumn + segments[segmentIndex].length;
+  return {
+    start: { line: value.range.start.line, column: startColumn },
+    end: { line: value.range.start.line, column: endColumn },
+  };
+}
 
 function validateArn(value: StatementValue): Array<Diagnostic> {
   const text = value.text;
@@ -18,23 +31,26 @@ function validateArn(value: StatementValue): Array<Diagnostic> {
   if (segments.length > 1) {
     const partition = segments[1];
     if (partition === '') {
-      diagnostics.push(createDiagnostic('partition is required', value.range));
-    } else if (partition !== '*' && !validPartitions.has(partition)) {
-      diagnostics.push(createDiagnostic(`partition must be one of: ${[...validPartitions].join(',')}`, value.range));
+      diagnostics.push(createDiagnostic('partition is required', segmentRange(value, 1)));
+    } else if (partition !== '*' && !Object.keys(partitions).includes(partition)) {
+      diagnostics.push(createDiagnostic(`partition must be one of: ${[...validPartitions].join(',')}`, segmentRange(value, 1)));
     }
   }
 
   if (segments.length > 3) {
+    const partition = segments[1];
     const region = segments[3];
-    if (region !== '*' && region !== '' && !validRegions.has(region)) {
-      diagnostics.push(createDiagnostic('invalid region', value.range));
+    if (isValidPartition(partition)) {
+      if (region !== '*' && region !== '' && !isRegionValidForPartition(partition, region)) {
+        diagnostics.push(createDiagnostic('invalid region for this partition', segmentRange(value, 3)));
+      }
     }
   }
 
   if (segments.length > 4) {
     const account = segments[4];
     if (account !== '*' && account !== '' && !accountIdPattern.test(account)) {
-      diagnostics.push(createDiagnostic('expected account id to be 12 digits', value.range));
+      diagnostics.push(createDiagnostic('expected account id to be 12 digits', segmentRange(value, 4)));
     }
   }
 
