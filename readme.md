@@ -69,3 +69,4 @@ This language server will provide diagnostics for some IAM policy issues, includ
 - ensuring `Sid` uniqueness within a policy document
 - effect has a valid value
 - defined actions are valid, or wildcards resolve to valid actions
+- arn parts are valid (partition, region, account id)
