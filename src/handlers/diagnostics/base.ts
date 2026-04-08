@@ -1,4 +1,5 @@
 import type { Diagnostic } from 'vscode-languageclient';
+import { isRuleEnabled } from '../../lib/config.ts';
 import type { StatementEntry } from '../../lib/treesitter/base.ts';
 import { createDiagnostic } from './utils.ts';
 
@@ -9,8 +10,8 @@ export class ElementValidator {
   }
   validate(entry: StatementEntry): Array<Diagnostic> {
     const diagnostics: Array<Diagnostic> = [];
-    if (this.#validated) {
-      diagnostics.push(createDiagnostic('duplicate statement key', entry.keyRange));
+    if (this.#validated && isRuleEnabled('DUPLICATE_KEY')) {
+      diagnostics.push(createDiagnostic('DUPLICATE_KEY', 'duplicate statement key', entry.keyRange));
     }
     this.#validated = true;
     return diagnostics;

@@ -49,7 +49,7 @@ function tokensMatch(a: string, b: string): boolean {
  * handles both `function:name` and `role/name` patterns.
  */
 function tokenizeResource(resource: string): string[] {
-  return resource.split(/(?<=[:\/])|(?=[:\/])/);
+  return resource.split(/(?<=[:/])|(?=[:/])/);
 }
 
 /**

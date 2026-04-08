@@ -6,13 +6,15 @@ import { handleCompletionRequest } from './handlers/completion/index.ts';
 import { diagnosticsHandler } from './handlers/diagnostics/diagnostics.ts';
 import { documentLinkHandler } from './handlers/document-link/document-link.ts';
 import { hoverHandler } from './handlers/hover/index.ts';
+import { updateConfig } from './lib/config.ts';
 import { TreeManager } from './lib/treesitter/manager.ts';
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
 const treeManager = new TreeManager(connection);
 
-connection.onInitialize(async () => {
+connection.onInitialize(async (params) => {
+  updateConfig(params.initializationOptions);
   connection.console.log(`Started the AWS IAM Policy Language Server`);
   return {
     capabilities: {
@@ -24,6 +26,13 @@ connection.onInitialize(async () => {
       documentLinkProvider: {},
     },
   };
+});
+
+connection.onDidChangeConfiguration(async (params) => {
+  updateConfig(params.settings?.['aws-iam-language-server']);
+  for (const document of documents.all()) {
+    await diagnosticsHandler(document, treeManager, connection);
+  }
 });
 
 documents.onDidOpen(async ({ document }) => {

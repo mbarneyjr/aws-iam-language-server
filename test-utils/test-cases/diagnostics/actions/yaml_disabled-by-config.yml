@@ -1,0 +1,13 @@
+---
+code: DEPENDENT_ACTION
+count: 0
+config:
+  diagnostics:
+    DEPENDENT_ACTION:
+      enabled: false
+---
+Statement:
+  - Effect: Allow
+    Action:
+      - access-analyzer:CreateAnalyzer
+    Resource: "*"

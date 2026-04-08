@@ -14,6 +14,9 @@ export function activate(context: ExtensionContext) {
 
   client = new LanguageClient('aws-iam-language-server', 'AWS IAM Language Server', serverOptions, {
     documentSelector: [{ language: 'json' }, { language: 'yaml' }, { language: 'terraform' }, { language: 'opentofu' }],
+    synchronize: {
+      configurationSection: 'aws-iam-language-server',
+    },
   });
 
   client.start();

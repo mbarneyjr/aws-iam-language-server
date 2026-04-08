@@ -1,0 +1,11 @@
+---
+code: DEPENDENT_ACTION
+includes:
+  - kms:Decrypt
+  - kms:GenerateDataKey
+---
+Statement:
+  - Effect: Allow
+    Action:
+      - aiops:CreateInvestigation
+    Resource: "*"

@@ -1,0 +1,14 @@
+---
+code: DEPENDENT_ACTION
+includes:
+  - iam:CreateServiceLinkedRole
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "access-analyzer:CreateAnalyzer",
+      "Resource": "*"
+    }
+  ]
+}

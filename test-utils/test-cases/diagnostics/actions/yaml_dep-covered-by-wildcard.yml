@@ -1,0 +1,11 @@
+---
+code: DEPENDENT_ACTION
+excludes:
+  - access-analyzer:CreateAnalyzer
+---
+Statement:
+  - Effect: Allow
+    Action:
+      - access-analyzer:CreateAnalyzer
+      - iam:*
+    Resource: "*"

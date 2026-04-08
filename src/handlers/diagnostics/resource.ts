@@ -1,4 +1,5 @@
 import type { Diagnostic } from 'vscode-languageclient';
+import { isRuleEnabled } from '../../lib/config.ts';
 import { isRegionValidForPartition, isValidPartition, partitions } from '../../lib/iam-policy/partitions.ts';
 import type { Range, StatementEntry, StatementValue } from '../../lib/treesitter/base.ts';
 import { ElementValidator } from './base.ts';
@@ -28,31 +29,39 @@ function validateArn(value: StatementValue): Array<Diagnostic> {
   if (!text.startsWith('arn:')) return [];
 
   const segments = text.split(':');
-  if (segments.length > 1) {
+  if (segments.length > 1 && isRuleEnabled('INVALID_PARTITION')) {
     const partition = segments[1];
     if (partition === '') {
-      diagnostics.push(createDiagnostic('partition is required', segmentRange(value, 1)));
+      diagnostics.push(createDiagnostic('INVALID_PARTITION', 'partition is required', segmentRange(value, 1)));
     } else if (partition !== '*' && !Object.keys(partitions).includes(partition)) {
       diagnostics.push(
-        createDiagnostic(`partition must be one of: ${[...validPartitions].join(',')}`, segmentRange(value, 1)),
+        createDiagnostic(
+          'INVALID_PARTITION',
+          `partition must be one of: ${[...validPartitions].join(',')}`,
+          segmentRange(value, 1),
+        ),
       );
     }
   }
 
-  if (segments.length > 3) {
+  if (segments.length > 3 && isRuleEnabled('INVALID_REGION')) {
     const partition = segments[1];
     const region = segments[3];
     if (isValidPartition(partition)) {
       if (region !== '*' && region !== '' && !isRegionValidForPartition(partition, region)) {
-        diagnostics.push(createDiagnostic('invalid region for this partition', segmentRange(value, 3)));
+        diagnostics.push(
+          createDiagnostic('INVALID_REGION', 'invalid region for this partition', segmentRange(value, 3)),
+        );
       }
     }
   }
 
-  if (segments.length > 4) {
+  if (segments.length > 4 && isRuleEnabled('INVALID_ACCOUNT')) {
     const account = segments[4];
     if (account !== '*' && account !== '' && !accountIdPattern.test(account)) {
-      diagnostics.push(createDiagnostic('expected account id to be 12 digits', segmentRange(value, 4)));
+      diagnostics.push(
+        createDiagnostic('INVALID_ACCOUNT', 'expected account id to be 12 digits', segmentRange(value, 4)),
+      );
     }
   }
 

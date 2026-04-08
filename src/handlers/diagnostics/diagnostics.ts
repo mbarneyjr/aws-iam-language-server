@@ -1,5 +1,6 @@
 import type { Connection, Diagnostic } from 'vscode-languageserver';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
+import { isRuleEnabled } from '../../lib/config.ts';
 import type { PolicyDocumentNode } from '../../lib/treesitter/base.ts';
 import type { TreeManager } from '../../lib/treesitter/manager.ts';
 import { ActionValidator } from './action.ts';
@@ -37,7 +38,7 @@ async function handleStandardDiagnostics(policyDocument: PolicyDocumentNode): Pr
   const sidValidator = new SidValidator();
   const effectValidator = new EffectValidator();
   const principalValidator = new PrincipalValidator();
-  const actionValidator = new ActionValidator();
+  const actionValidator = new ActionValidator(policyDocument, new Set(['Action', 'NotAction']));
   const resourceValidator = new ResourceValidator();
   const conditionValidator = new ConditionValidator();
   for (const statement of policyDocument.statements) {
@@ -55,23 +56,36 @@ async function handleStandardDiagnostics(policyDocument: PolicyDocumentNode): Pr
         diagnostics = diagnostics.concat(resourceValidator.validate(entry));
       } else if (entry.key === 'Condition') {
         diagnostics = diagnostics.concat(conditionValidator.validate(entry));
-      } else {
-        diagnostics.push(createDiagnostic(`Unrecognized entry "${entry.key}" in statement`, entry.keyRange));
+      } else if (isRuleEnabled('UNRECOGNIZED_KEY')) {
+        diagnostics.push(
+          createDiagnostic('UNRECOGNIZED_KEY', `Unrecognized entry "${entry.key}" in statement`, entry.keyRange),
+        );
       }
     }
 
-    if (!effectValidator.isValidated()) {
-      diagnostics.push(createDiagnostic(`Missing required "Effect" entry in statement`, statement.range));
-    }
-    if (!actionValidator.isValidated()) {
+    if (!effectValidator.isValidated() && isRuleEnabled('MISSING_EFFECT')) {
       diagnostics.push(
-        createDiagnostic(`Missing required "Action" or "NotAction" entry in statement`, statement.range),
+        createDiagnostic('MISSING_EFFECT', 'Missing required "Effect" entry in statement', statement.range),
       );
     }
-    if (!resourceValidator.isValidated() && !principalValidator.isValidated()) {
+    if (!actionValidator.isValidated() && isRuleEnabled('MISSING_ACTION')) {
       diagnostics.push(
         createDiagnostic(
-          `Missing required "Resource"/"NotResource" or "Principal"/"NotPrincipal" entry in statement`,
+          'MISSING_ACTION',
+          'Missing required "Action" or "NotAction" entry in statement',
+          statement.range,
+        ),
+      );
+    }
+    if (
+      !resourceValidator.isValidated() &&
+      !principalValidator.isValidated() &&
+      isRuleEnabled('MISSING_RESOURCE_OR_PRINCIPAL')
+    ) {
+      diagnostics.push(
+        createDiagnostic(
+          'MISSING_RESOURCE_OR_PRINCIPAL',
+          'Missing required "Resource"/"NotResource" or "Principal"/"NotPrincipal" entry in statement',
           statement.range,
         ),
       );
@@ -90,7 +104,7 @@ async function handleHclBlockDiagnostics(policyDocument: PolicyDocumentNode): Pr
   const sidValidator = new SidValidator();
   const effectValidator = new EffectValidator();
   const principalValidator = new PrincipalValidator();
-  const actionValidator = new ActionValidator();
+  const actionValidator = new ActionValidator(policyDocument, new Set(['actions', 'not_actions']));
   const resourceValidator = new ResourceValidator();
   const conditionValidator = new ConditionValidator();
   for (const statement of policyDocument.statements) {
@@ -108,23 +122,36 @@ async function handleHclBlockDiagnostics(policyDocument: PolicyDocumentNode): Pr
         diagnostics = diagnostics.concat(resourceValidator.validate(entry));
       } else if (entry.key === 'condition') {
         diagnostics = diagnostics.concat(conditionValidator.validate(entry));
-      } else {
-        diagnostics.push(createDiagnostic(`Unrecognized entry "${entry.key}" in statement`, entry.keyRange));
+      } else if (isRuleEnabled('UNRECOGNIZED_KEY')) {
+        diagnostics.push(
+          createDiagnostic('UNRECOGNIZED_KEY', `Unrecognized entry "${entry.key}" in statement`, entry.keyRange),
+        );
       }
     }
 
-    if (!effectValidator.isValidated()) {
-      diagnostics.push(createDiagnostic(`Missing required "effect" entry in statement`, statement.range));
-    }
-    if (!actionValidator.isValidated()) {
+    if (!effectValidator.isValidated() && isRuleEnabled('MISSING_EFFECT')) {
       diagnostics.push(
-        createDiagnostic(`Missing required "actions" or "not_actions" entry in statement`, statement.range),
+        createDiagnostic('MISSING_EFFECT', 'Missing required "effect" entry in statement', statement.range),
       );
     }
-    if (!resourceValidator.isValidated() && !principalValidator.isValidated()) {
+    if (!actionValidator.isValidated() && isRuleEnabled('MISSING_ACTION')) {
       diagnostics.push(
         createDiagnostic(
-          `Missing required "resources"/"not_resources" or "principals"/"not_principals" entry in statement`,
+          'MISSING_ACTION',
+          'Missing required "actions" or "not_actions" entry in statement',
+          statement.range,
+        ),
+      );
+    }
+    if (
+      !resourceValidator.isValidated() &&
+      !principalValidator.isValidated() &&
+      isRuleEnabled('MISSING_RESOURCE_OR_PRINCIPAL')
+    ) {
+      diagnostics.push(
+        createDiagnostic(
+          'MISSING_RESOURCE_OR_PRINCIPAL',
+          'Missing required "resources"/"not_resources" or "principals"/"not_principals" entry in statement',
           statement.range,
         ),
       );

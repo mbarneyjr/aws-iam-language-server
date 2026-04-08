@@ -16,6 +16,78 @@
     "onLanguage:terraform"
   ],
   "icon": "./images/iam.png",
+  "contributes": {
+    "configuration": {
+      "title": "AWS IAM Language Server",
+      "properties": {
+        "aws-iam-language-server.diagnostics.DUPLICATE_KEY.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn on duplicate statement keys."
+        },
+        "aws-iam-language-server.diagnostics.UNRECOGNIZED_KEY.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn on unrecognized entries in a statement."
+        },
+        "aws-iam-language-server.diagnostics.MISSING_EFFECT.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when a statement is missing the required Effect entry."
+        },
+        "aws-iam-language-server.diagnostics.MISSING_ACTION.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when a statement is missing the required Action or NotAction entry."
+        },
+        "aws-iam-language-server.diagnostics.MISSING_RESOURCE_OR_PRINCIPAL.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when a statement is missing both Resource/NotResource and Principal/NotPrincipal."
+        },
+        "aws-iam-language-server.diagnostics.INVALID_EFFECT.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when Effect value is not Allow or Deny."
+        },
+        "aws-iam-language-server.diagnostics.DUPLICATE_SID.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn on duplicate Sid values across statements."
+        },
+        "aws-iam-language-server.diagnostics.INVALID_SID.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when Sid contains invalid characters."
+        },
+        "aws-iam-language-server.diagnostics.UNRECOGNIZED_ACTION.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when an action does not match any known IAM action."
+        },
+        "aws-iam-language-server.diagnostics.DEPENDENT_ACTION.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when an action requires dependent actions that aren't granted in the same statement."
+        },
+        "aws-iam-language-server.diagnostics.INVALID_PARTITION.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn on invalid or missing partition in a resource ARN."
+        },
+        "aws-iam-language-server.diagnostics.INVALID_REGION.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn on invalid region for the specified partition."
+        },
+        "aws-iam-language-server.diagnostics.INVALID_ACCOUNT.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when account ID is not 12 digits."
+        }
+      }
+    }
+  },
   "main": "./src/extension.js",
   "scripts": {
     "start": "node src/server.ts --stdio",

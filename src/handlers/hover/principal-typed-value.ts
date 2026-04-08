@@ -1,8 +1,5 @@
 import { type Hover, MarkupKind } from 'vscode-languageserver';
-import type {
-  PrincipalBlockIdentifierLocation,
-  PrincipalTypedValueLocation,
-} from '../../lib/iam-policy/location.ts';
+import type { PrincipalBlockIdentifierLocation, PrincipalTypedValueLocation } from '../../lib/iam-policy/location.ts';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
 
 export function handlePrincipalTypedValueHover(

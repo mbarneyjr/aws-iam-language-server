@@ -44,21 +44,17 @@ describe('hoverHandler', async () => {
         it(`${testCase.category}/${testCase.filename}`, async () => {
           const uri = `test://${testCase.category}/${testCase.filename}`;
           await treeManager.openDocument(uri, testCase.doc, testCase.lang);
-          const result = hoverHandler(
-            { position: testCase.position, textDocument: { uri } },
-            treeManager,
-            connection,
-          );
+          const result = hoverHandler({ position: testCase.position, textDocument: { uri } }, treeManager, connection);
           if (testCase.isNull) {
             assert.equal(result, null, 'expected no hover result');
             return;
           }
-          assert.notEqual(result, null, 'expected a hover result');
+          assert.ok(result, 'expected a hover result');
           const content =
-            typeof result!.contents === 'string'
-              ? result!.contents
-              : 'value' in result!.contents
-                ? result!.contents.value
+            typeof result.contents === 'string'
+              ? result.contents
+              : 'value' in result.contents
+                ? result.contents.value
                 : '';
           if (testCase.includes) {
             for (const substring of testCase.includes) {

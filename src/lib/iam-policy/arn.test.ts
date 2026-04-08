@@ -17,7 +17,8 @@ describe('parseArn', () => {
 
   it('joins segments after the 5th colon into resource', () => {
     const result = parseArn('arn:aws:sns:us-east-1:123456789012:my-topic:sub-id');
-    assert.equal(result!.resource, 'my-topic:sub-id');
+    assert.ok(result);
+    assert.equal(result.resource, 'my-topic:sub-id');
   });
 
   it('returns null for bare wildcard', () => {
@@ -34,45 +35,53 @@ describe('parseArn', () => {
 });
 
 describe('ServiceReference.getResources', () => {
+  function parseArnOrFail(arn: string) {
+    const result = parseArn(arn);
+    assert.ok(result, `expected parseArn to return non-null for "${arn}"`);
+    return result;
+  }
+
   it('matches s3 bucket', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:s3:::my-bucket')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:s3:::my-bucket'));
     assert.equal(resources.length, 1);
     assert.equal(resources[0].name, 'bucket');
   });
 
   it('matches s3 object', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:s3:::my-bucket/key')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:s3:::my-bucket/key'));
     assert.equal(resources.length, 1);
     assert.equal(resources[0].name, 'object');
   });
 
   it('matches ec2 instance with wildcard account', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:ec2:us-east-1:*:instance/*')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:ec2:us-east-1:*:instance/*'));
     assert.equal(resources.length, 1);
     assert.equal(resources[0].name, 'instance');
   });
 
   it('matches ec2 instance with ? wildcards', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:ec2:us-east-1:*:instance/i-???????????????????')!);
+    const resources = ServiceReference.getResources(
+      parseArnOrFail('arn:aws:ec2:us-east-1:*:instance/i-???????????????????'),
+    );
     assert.equal(resources.length, 1);
     assert.equal(resources[0].name, 'instance');
   });
 
   it('matches iam role', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:iam::123456789012:role/my-role')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:iam::123456789012:role/my-role'));
     assert.equal(resources.length, 1);
     assert.equal(resources[0].name, 'role');
   });
 
   it('returns multiple matches for broad wildcard', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:s3:::*')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:s3:::*'));
     assert.ok(resources.length > 1);
     assert.ok(resources.some((r) => r.name === 'bucket'));
     assert.ok(resources.some((r) => r.name === 'object'));
   });
 
   it('returns empty for unknown service', () => {
-    const resources = ServiceReference.getResources(parseArn('arn:aws:fakeservice:us-east-1:123:thing/id')!);
+    const resources = ServiceReference.getResources(parseArnOrFail('arn:aws:fakeservice:us-east-1:123:thing/id'));
     assert.deepEqual(resources, []);
   });
 });
