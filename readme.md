@@ -15,6 +15,15 @@ It supports policies written in
 
 Install the [extension](https://marketplace.visualstudio.com/items?itemName=MichaelBarney.aws-iam-language-server).
 
+#### Config
+
+```json
+{
+  // replace ${DIAGNOSTIC_RULE} with a diganostic rule id, like DEPENDENT_ACTION
+  "aws-iam-language-server.diagnostics.${DIAGNOSTIC_RULE}.enabled": true
+}
+```
+
 ### Neovim, etc
 
 You can install the language server globally with npm:
@@ -30,6 +39,15 @@ vim.lsp.config("aws-iam-language-server", {
   cmd = { "aws-iam-language-server", "--stdio" },
   filetypes = { "yaml", "yaml.cloudformation", "json", "json.cloudformation", "terraform", "tofu" },
   root_markers = { ".git" },
+  -- optional, only if you want to override the defaults
+  settings = {
+    ["aws-iam-language-server"] = {
+      diagnostics = {
+        -- replace ${DIAGNOSTIC_RULE} with a diganostic rule id, like DEPENDENT_ACTION
+        ${DIAGNOSTIC_RULE} = { enabled = false },
+      },
+    },
+  },
 })
 
 vim.lsp.enable("aws-iam-language-server")
@@ -82,3 +100,4 @@ This language server will provide diagnostics for some IAM policy issues, includ
 - effect has a valid value
 - defined actions are valid, or wildcards resolve to valid actions
 - arn parts are valid (partition, region, account id)
+- dependent actions (`ecs:RunTask` requires `iam:PassRole`)
