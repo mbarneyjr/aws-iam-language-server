@@ -31,21 +31,19 @@ export class ActionValidator extends ElementValidator {
 
       if (isRuleEnabled('DEPENDENT_ACTION')) {
         const allActions = this.#getExpandedActions();
-        for (const action of expanded) {
-          const actionDef = ServiceReference.getAction(action);
-          if (!actionDef?.dependentActions) continue;
+        const actionDef = ServiceReference.getAction(value.text);
+        if (!actionDef?.dependentActions) continue;
 
-          const missing = actionDef.dependentActions.filter((dep) => !allActions.has(dep.toLowerCase()));
-          if (missing.length > 0) {
-            diagnostics.push(
-              createDiagnostic(
-                'DEPENDENT_ACTION',
-                `"${action}" requires dependent action${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`,
-                value.range,
-                DiagnosticSeverity.Warning,
-              ),
-            );
-          }
+        const missing = actionDef.dependentActions.filter((dep) => !allActions.has(dep.toLowerCase()));
+        if (missing.length > 0) {
+          diagnostics.push(
+            createDiagnostic(
+              'DEPENDENT_ACTION',
+              `"${actionDef.name}" requires dependent action(s): ${missing.join(', ')}`,
+              value.range,
+              DiagnosticSeverity.Warning,
+            ),
+          );
         }
       }
     }
