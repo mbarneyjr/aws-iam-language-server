@@ -1,7 +1,6 @@
 ---
 includes:
-  - service principal
-  - ecs
+  - AWS Service
 ---
 data "aws_iam_policy_document" "example" {
   statement {

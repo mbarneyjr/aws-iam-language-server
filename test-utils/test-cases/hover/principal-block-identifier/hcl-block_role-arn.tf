@@ -1,7 +1,6 @@
 ---
 includes:
-  - IAM role
-  - role/my-role
+  - IAM Role
 ---
 data "aws_iam_policy_document" "example" {
   statement {

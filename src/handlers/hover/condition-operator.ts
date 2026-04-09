@@ -1,6 +1,7 @@
 import { type Hover, MarkupKind } from 'vscode-languageserver';
 import { conditionOperators } from '../../lib/iam-policy/condition-operators.ts';
 import type { ConditionOperatorLocation } from '../../lib/iam-policy/location.ts';
+import { formatConditionOperatorDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 
 export function handleConditionOperatorHover(location: ConditionOperatorLocation): Hover | null {
   const operator = conditionOperators[location.value as keyof typeof conditionOperators];
@@ -10,7 +11,7 @@ export function handleConditionOperatorHover(location: ConditionOperatorLocation
     range: location.range,
     contents: {
       kind: MarkupKind.Markdown,
-      value: operator.description,
+      value: formatConditionOperatorDocumentation(operator),
     },
   };
 }

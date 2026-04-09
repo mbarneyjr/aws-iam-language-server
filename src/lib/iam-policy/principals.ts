@@ -1,8 +1,9 @@
 import { ServiceReference } from './reference/services.ts';
+import type { PrincipalType } from './reference/types.ts';
 
-export const principalTypes = {
+export const principalTypes: Record<string, PrincipalType> = {
   aws: {
-    value: 'AWS',
+    name: 'AWS',
     description: 'An AWS account root user, IAM user, or IAM role.',
     patterns: [
       `*`,
@@ -15,11 +16,12 @@ export const principalTypes = {
     ],
   },
   canonicalUser: {
-    value: 'CanonicalUser',
+    name: 'CanonicalUser',
     description: 'An Amazon S3 canonical user ID.',
+    patterns: [],
   },
   federated: {
-    value: 'Federated',
+    name: 'Federated',
     description: 'A SAML provider or an OpenID Connect provider.',
     patterns: [
       'cognito-identity.amazonaws.com',
@@ -31,8 +33,13 @@ export const principalTypes = {
     ],
   },
   service: {
-    value: 'Service',
+    name: 'Service',
     description: 'An AWS service principal.',
     patterns: ServiceReference.getServicePrincipals(),
   },
-} as const;
+  '*': {
+    name: '*',
+    description: 'Public Unauthenticated Access',
+    patterns: ['*'],
+  },
+};

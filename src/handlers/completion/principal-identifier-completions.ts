@@ -1,5 +1,5 @@
 import type { CompletionItem, CompletionList } from 'vscode-languageserver';
-import { CompletionItemKind } from 'vscode-languageserver';
+import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import { partitions } from '../../lib/iam-policy/partitions.ts';
 import { principalTypes } from '../../lib/iam-policy/principals.ts';
 import { partialRange } from './index.ts';
@@ -61,29 +61,35 @@ export function completePrincipalIdentifier(
 
   if (parts.length === 1) {
     if (config.arn.length > 0 && 'arn'.startsWith(partial.toLowerCase())) {
-      items.push({ label: 'arn', kind: CompletionItemKind.Constant, textEdit: { range, newText: 'arn' } });
+      items.push({
+        label: 'arn',
+        kind: CompletionItemKind.Constant,
+        textEdit: { range, newText: 'arn' },
+      });
     }
     for (const pattern of config.nonArn) {
       if (pattern.toLowerCase().startsWith(partial.toLowerCase())) {
-        items.push({ label: pattern, kind: CompletionItemKind.Value, textEdit: { range, newText: pattern } });
+        items.push({
+          label: pattern,
+          kind: CompletionItemKind.Value,
+          textEdit: { range, newText: pattern },
+        });
       }
     }
   } else if (parts.length === 2) {
     for (const [id, partition] of Object.entries(partitions)) {
-      const prefix = `${parts[0]}:${id}`;
-      if (prefix.toLowerCase().startsWith(partial.toLowerCase())) {
+      if (`${parts[0]}:${id}`.toLowerCase().startsWith(partial.toLowerCase())) {
         items.push({
           label: id,
           kind: CompletionItemKind.Enum,
-          documentation: { kind: 'markdown', value: partition.name },
+          documentation: { kind: MarkupKind.Markdown, value: partition.name },
         });
       }
     }
   } else if (parts.length === 3) {
     const services = [...new Set(config.arn.map((pattern) => pattern.split(':')[2]))];
     for (const service of services) {
-      const prefix = `${parts[0]}:${parts[1]}:${service}`;
-      if (prefix.toLowerCase().startsWith(partial.toLowerCase())) {
+      if (`${parts[0]}:${parts[1]}:${service}`.toLowerCase().startsWith(partial.toLowerCase())) {
         items.push({ label: service, kind: CompletionItemKind.Enum });
       }
     }
@@ -95,7 +101,7 @@ export function completePrincipalIdentifier(
       items.push({
         label: ':',
         kind: CompletionItemKind.Enum,
-        documentation: { kind: 'markdown', value: 'No region component for this service' },
+        documentation: { kind: MarkupKind.Markdown, value: 'No region component for this service' },
       });
     } else {
       const partition =
@@ -108,7 +114,7 @@ export function completePrincipalIdentifier(
           items.push({
             label: region.id,
             kind: CompletionItemKind.Enum,
-            documentation: { kind: 'markdown', value: region.name },
+            documentation: { kind: MarkupKind.Markdown, value: region.name },
           });
         }
       }
@@ -119,7 +125,7 @@ export function completePrincipalIdentifier(
       label,
       kind: CompletionItemKind.Enum,
       textEdit: { range, newText: label },
-      documentation: { kind: 'markdown', value: 'AWS Account ID' },
+      documentation: { kind: MarkupKind.Markdown, value: 'AWS Account ID' },
     });
   } else {
     const service = parts[2];

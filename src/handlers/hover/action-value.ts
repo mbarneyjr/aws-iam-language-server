@@ -1,22 +1,33 @@
 import { type Hover, MarkupKind } from 'vscode-languageserver';
 import type { ActionValueLocation } from '../../lib/iam-policy/location.ts';
+import { formatActionDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
-import { formatActionDocumentation } from '../completion/action-value.ts';
+import { expandActionPattern } from '../../lib/iam-policy/wildcard.ts';
 
 export function handleActionValueHover(location: ActionValueLocation): Hover | null {
-  const action = ServiceReference.getAction(location.value);
-  if (!action) return null;
+  const actions = expandActionPattern(location.value);
+  if (actions.length === 0) return null;
+  if (actions.length > 16) {
+    return {
+      range: location.range,
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: `**${actions.length} actions**`,
+      },
+    };
+  }
 
-  const lines: string[] = [`**${action.service}:${action.name}**`];
-  if (action.description) lines.push(action.description);
-  const docs = formatActionDocumentation(action);
-  if (docs) lines.push(docs);
+  const docs = [];
+  for (const actionName of actions) {
+    const action = ServiceReference.getAction(actionName);
+    if (action) docs.push(formatActionDocumentation(action));
+  }
 
   return {
     range: location.range,
     contents: {
       kind: MarkupKind.Markdown,
-      value: lines.join('\n\n'),
+      value: docs.join('\n---\n'),
     },
   };
 }

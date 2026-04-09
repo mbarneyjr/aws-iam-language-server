@@ -1,5 +1,5 @@
 import type { CompletionItem, CompletionList } from 'vscode-languageserver';
-import { CompletionItemKind } from 'vscode-languageserver';
+import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import type { PrincipalValueLocation } from '../../lib/iam-policy/location.ts';
 import { type CompletionContext, partialRange } from './index.ts';
 
@@ -14,7 +14,7 @@ export function completePrincipalValue(location: PrincipalValueLocation, context
       kind: CompletionItemKind.Enum,
       textEdit: { range, newText: label },
       documentation: {
-        kind: 'markdown',
+        kind: MarkupKind.Markdown,
         value: 'Public Unauthenticated Access',
       },
     });

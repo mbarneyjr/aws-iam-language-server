@@ -2,6 +2,7 @@ import type { CompletionItem, CompletionList } from 'vscode-languageserver';
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import { conditionOperators } from '../../lib/iam-policy/condition-operators.ts';
 import type { ConditionOperatorLocation } from '../../lib/iam-policy/location.ts';
+import { formatConditionOperatorDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 import { type CompletionContext, partialRange } from './index.ts';
 
 export function completeConditionOperator(
@@ -21,7 +22,7 @@ export function completeConditionOperator(
       textEdit: { range, newText: name },
       documentation: {
         kind: MarkupKind.Markdown,
-        value: operator.description,
+        value: formatConditionOperatorDocumentation(operator),
       },
     });
   }

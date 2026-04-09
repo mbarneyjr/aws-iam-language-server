@@ -1,7 +1,6 @@
 ---
 includes:
-  - service principal
-  - ecs
+  - AWS Service
 ---
 Statement:
   - Effect: Allow

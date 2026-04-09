@@ -77,6 +77,9 @@ async function scrapeAndMerge(slug: string): Promise<void> {
     const key = serviceData.conditionKeys[name];
     if (key) {
       key.description = docs.description;
+      if (docs.type && !key.types.includes(docs.type)) {
+        key.types.push(docs.type);
+      }
     }
   }
 
@@ -186,8 +189,8 @@ function parseActionsTable($: cheerio.CheerioAPI): Record<string, ScrapedAction>
   return actions;
 }
 
-function parseConditionKeysTable($: cheerio.CheerioAPI): Record<string, { description: string }> {
-  const conditionKeys: Record<string, { description: string }> = {};
+function parseConditionKeysTable($: cheerio.CheerioAPI): Record<string, { description: string; type: string }> {
+  const conditionKeys: Record<string, { description: string; type: string }> = {};
 
   const table = findTableByHeader($, 'Condition keys');
   if (!table) return conditionKeys;
@@ -201,7 +204,8 @@ function parseConditionKeysTable($: cheerio.CheerioAPI): Record<string, { descri
     if (!name) return;
 
     const description = $(cells[1]).text().trim();
-    conditionKeys[name] = { description };
+    const type = $(cells[2]).text().trim();
+    conditionKeys[name] = { description, type };
   });
 
   return conditionKeys;

@@ -18,8 +18,7 @@ export function hoverHandler(params: HoverParams, treeManager: TreeManager, conn
   const handler = treeManager.getLanguageHandler(params.textDocument.uri);
   if (!handler) return null;
 
-  const position = params.position;
-  const cursorContext = handler.getCursorContext(params.textDocument.uri, position);
+  const cursorContext = handler.getCursorContext(params.textDocument.uri, params.position);
   if (!cursorContext) return null;
 
   const location = resolvePolicyLocation(cursorContext);

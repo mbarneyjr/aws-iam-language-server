@@ -1,5 +1,9 @@
 import { type Hover, MarkupKind } from 'vscode-languageserver';
 import type { PrincipalBlockIdentifierLocation, PrincipalTypedValueLocation } from '../../lib/iam-policy/location.ts';
+import {
+  formatPrincipalTypedValueDocumentation,
+  principalTypedValues,
+} from '../../lib/iam-policy/reference/documentation.ts';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
 
 export function handlePrincipalTypedValueHover(
@@ -10,7 +14,7 @@ export function handlePrincipalTypedValueHover(
       range: location.range,
       contents: {
         kind: MarkupKind.Markdown,
-        value: '**All principals** of this type.',
+        value: formatPrincipalTypedValueDocumentation(principalTypedValues['*']),
       },
     };
   }
@@ -20,12 +24,11 @@ export function handlePrincipalTypedValueHover(
   if (principalType === 'Service') {
     const principals = ServiceReference.getServicePrincipals();
     if (principals.includes(location.value)) {
-      const serviceName = location.value.split('.')[0];
       return {
         range: location.range,
         contents: {
           kind: MarkupKind.Markdown,
-          value: `**AWS service principal**\n\n\`${location.value}\` — allows the \`${serviceName}\` service to assume this role or access this resource.`,
+          value: formatPrincipalTypedValueDocumentation(principalTypedValues.Service),
         },
       };
     }
@@ -37,7 +40,7 @@ export function handlePrincipalTypedValueHover(
         range: location.range,
         contents: {
           kind: MarkupKind.Markdown,
-          value: `**AWS account**\n\nGrants access to the root user and all IAM identities in account \`${location.value}\`.`,
+          value: formatPrincipalTypedValueDocumentation(principalTypedValues.Account),
         },
       };
     }
@@ -50,7 +53,7 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**AWS account root user**\n\nGrants access to the root user of this account. Equivalent to specifying the account ID.`,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.Account),
           },
         };
       }
@@ -59,7 +62,7 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**IAM role**\n\n\`${resource}\`\n\nAny identity that assumes this role will have the permissions granted by this statement.`,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.Role),
           },
         };
       }
@@ -68,7 +71,7 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**IAM user**\n\n\`${resource}\``,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.User),
           },
         };
       }
@@ -77,7 +80,7 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**Assumed role session**\n\n\`${resource}\``,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.RoleSession),
           },
         };
       }
@@ -92,7 +95,7 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**OIDC identity provider**\n\n\`${resource}\``,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.FederatedOidc),
           },
         };
       }
@@ -101,28 +104,19 @@ export function handlePrincipalTypedValueHover(
           range: location.range,
           contents: {
             kind: MarkupKind.Markdown,
-            value: `**SAML identity provider**\n\n\`${resource}\``,
+            value: formatPrincipalTypedValueDocumentation(principalTypedValues.FederatedSaml),
           },
         };
       }
     }
 
-    const knownProviders: Record<string, string> = {
-      'cognito-identity.amazonaws.com': 'Amazon Cognito identity pool',
-      'www.amazon.com': 'Login with Amazon',
-      'accounts.google.com': 'Google',
-      'graph.facebook.com': 'Facebook',
+    return {
+      range: location.range,
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: formatPrincipalTypedValueDocumentation(principalTypedValues.FederatedIdentity),
+      },
     };
-    const description = knownProviders[location.value];
-    if (description) {
-      return {
-        range: location.range,
-        contents: {
-          kind: MarkupKind.Markdown,
-          value: `**Federated identity provider**\n\n${description}`,
-        },
-      };
-    }
   }
 
   return null;

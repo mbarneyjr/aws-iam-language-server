@@ -1,6 +1,6 @@
 ---
 includes:
-  - root user
+  - AWS Account
 ---
 {
   "Statement": [

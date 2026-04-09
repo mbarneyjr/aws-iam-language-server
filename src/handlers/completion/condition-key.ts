@@ -1,8 +1,9 @@
 import type { CompletionItem, CompletionList } from 'vscode-languageserver';
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import type { ConditionKeyLocation } from '../../lib/iam-policy/location.ts';
+import { formatConditionKeyDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
-import type { ConditionKey, GlobalConditionKey } from '../../lib/iam-policy/reference/types.ts';
+import type { ConditionKey } from '../../lib/iam-policy/reference/types.ts';
 import { expandActionPattern } from '../../lib/iam-policy/wildcard.ts';
 import { type CompletionContext, partialRange } from './index.ts';
 
@@ -14,7 +15,7 @@ export function completeConditionKey(location: ConditionKeyLocation, context: Co
   const seen = new Set<string>();
 
   // Build a lookup for global keys so we can enrich service-specific keys with descriptions
-  const globalByName = new Map<string, GlobalConditionKey>();
+  const globalByName = new Map<string, ConditionKey>();
   for (const global of ServiceReference.getGlobalConditionKeys()) {
     globalByName.set(global.name, global);
   }
@@ -34,17 +35,17 @@ export function completeConditionKey(location: ConditionKeyLocation, context: Co
       if (existingKeys.includes(key.name)) continue;
       if (location.partial && !key.name.toLowerCase().startsWith(location.partial.toLowerCase())) continue;
       seen.add(key.name);
-
-      const global = globalByName.get(key.name);
-      const service = key.name.split(':')[0];
-      const conditionKeyData = service ? ServiceReference.getConditionKey(service, key.name) : undefined;
+      const globalKey = globalByName.get(key.name);
+      const keyDocs = [];
+      if (globalKey) keyDocs.push(formatConditionKeyDocumentation(globalKey));
+      if (key) keyDocs.push(formatConditionKeyDocumentation(key));
       items.push({
         label: key.name,
         kind: CompletionItemKind.Property,
         textEdit: { range, newText: key.name },
         documentation: {
           kind: MarkupKind.Markdown,
-          value: formatConditionKeyDocumentation(key.types, global, conditionKeyData),
+          value: keyDocs.join('\n---\n'),
         },
       });
     }
@@ -62,30 +63,10 @@ export function completeConditionKey(location: ConditionKeyLocation, context: Co
       textEdit: { range, newText: global.name },
       documentation: {
         kind: MarkupKind.Markdown,
-        value: formatConditionKeyDocumentation([], global),
+        value: formatConditionKeyDocumentation(global),
       },
     });
   }
 
   return { items, isIncomplete: false };
-}
-
-export function formatConditionKeyDocumentation(
-  types: string[],
-  global: GlobalConditionKey | undefined,
-  conditionKey?: ConditionKey,
-): string {
-  const parts: string[] = [];
-
-  const description = global?.description ?? conditionKey?.description;
-  if (description) parts.push(description);
-
-  const meta: string[] = [];
-  const type = types.length > 0 ? types.join(', ') : undefined;
-  if (type) meta.push(`**Type:** ${type}`);
-  if (global?.valueType === 'multi') meta.push('**Value type:** Multivalued');
-  if (global?.availability) meta.push(`**Availability:** ${global.availability}`);
-  if (meta.length > 0) parts.push(meta.join('\n\n'));
-
-  return parts.join('\n\n');
 }

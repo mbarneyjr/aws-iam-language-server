@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { type ArnParts, arnMatches, parseArn } from '../arn.ts';
-import type { Action, ConditionKey, GlobalConditionKey, ResourceDef, ServiceData } from './types.ts';
+import type { Action, ConditionKey, ResourceDef, ServiceData } from './types.ts';
 
 export class ServiceReference {
   static #serviceDataMap: Record<string, ServiceData> = {};
   static #allActions: Array<string>;
   static #allServices: Array<string>;
   static #servicePrincipals: Array<string>;
-  static #globalConditionKeys: Array<GlobalConditionKey>;
+  static #globalConditionKeys: Array<ConditionKey>;
 
   static getServiceData(service: string): ServiceData | undefined {
     if (!ServiceReference.#serviceDataMap[service]) {
@@ -70,8 +70,8 @@ export class ServiceReference {
     });
   }
 
-  static getConditionKeysForActions(actions: string[]): Array<{ name: string; types: string[] }> {
-    const keys = new Map<string, string[]>();
+  static getConditionKeysForActions(actions: string[]): Array<ConditionKey> {
+    const keys = new Map<string, ConditionKey>();
     for (const action of actions) {
       const [service, actionName] = action.split(':');
       const serviceData = ServiceReference.getServiceData(service);
@@ -79,18 +79,15 @@ export class ServiceReference {
       const actionDef = serviceData.actions[actionName];
       if (actionDef?.conditionKeys) {
         for (const keyName of actionDef.conditionKeys) {
-          if (!keys.has(keyName)) {
-            const keyDef = serviceData.conditionKeys[keyName];
-            keys.set(keyName, keyDef?.types ?? []);
-          }
+          keys.set(keyName, serviceData.conditionKeys[keyName]);
         }
       }
     }
     const sorted = [...keys.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-    return sorted.map(([name, types]) => ({ name, types }));
+    return sorted.map(([_name, key]) => key);
   }
 
-  static getGlobalConditionKeys(): Array<GlobalConditionKey> {
+  static getGlobalConditionKeys(): Array<ConditionKey> {
     if (!ServiceReference.#globalConditionKeys) {
       try {
         ServiceReference.#globalConditionKeys = JSON.parse(
@@ -113,7 +110,7 @@ export class ServiceReference {
     return ServiceReference.getServiceData(service)?.conditionKeys[keyName];
   }
 
-  static getResources(arn: ArnParts): ResourceDef[] {
+  static getResources(arn: ArnParts): Array<ResourceDef> {
     const serviceData = ServiceReference.getServiceData(arn.service);
     if (!serviceData) return [];
     const matches: ResourceDef[] = [];
@@ -129,8 +126,8 @@ export class ServiceReference {
     return matches;
   }
 
-  static getResourcesForActions(actions: string[]) {
-    const resources = new Map<string, { service: string; name: string; arn: string; conditionKeys: Array<string> }>();
+  static getResourcesForActions(actions: Array<string>): Array<ResourceDef> {
+    const resources = [];
     for (const action of actions) {
       const [service, actionName] = action.split(':');
       const serviceData = ServiceReference.getServiceData(service);
@@ -140,14 +137,7 @@ export class ServiceReference {
       for (const actionResource of actionDef.resources) {
         const resourceDef = serviceData.resources.find((r) => r.name === actionResource.name);
         if (resourceDef) {
-          for (const arn of resourceDef.arnFormats) {
-            resources.set(arn, {
-              service,
-              name: resourceDef.name,
-              arn,
-              conditionKeys: resourceDef.conditionKeys,
-            });
-          }
+          resources.push(resourceDef);
         }
       }
     }

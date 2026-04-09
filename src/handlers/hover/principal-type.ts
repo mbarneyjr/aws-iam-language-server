@@ -1,25 +1,16 @@
 import { type Hover, MarkupKind } from 'vscode-languageserver';
 import type { PrincipalBlockTypeLocation, PrincipalTypeLocation } from '../../lib/iam-policy/location.ts';
 import { principalTypes } from '../../lib/iam-policy/principals.ts';
+import { formatPrincipalTypeDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 
 export function handlePrincipalTypeHover(location: PrincipalTypeLocation | PrincipalBlockTypeLocation): Hover | null {
-  if (location.value === '*') {
-    return {
-      range: location.range,
-      contents: {
-        kind: MarkupKind.Markdown,
-        value: '**Public (unauthenticated) access**\n\nMatches all principals, including anonymous users.',
-      },
-    };
-  }
-
   for (const principalType of Object.values(principalTypes)) {
-    if (principalType.value === location.value) {
+    if (principalType.name === location.value) {
       return {
         range: location.range,
         contents: {
           kind: MarkupKind.Markdown,
-          value: principalType.description,
+          value: formatPrincipalTypeDocumentation(principalType),
         },
       };
     }

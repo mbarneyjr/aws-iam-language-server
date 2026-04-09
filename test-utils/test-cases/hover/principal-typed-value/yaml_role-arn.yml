@@ -1,7 +1,6 @@
 ---
 includes:
-  - IAM role
-  - role/my-role
+  - IAM Role
 ---
 Statement:
   - Effect: Allow

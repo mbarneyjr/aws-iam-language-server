@@ -1,6 +1,7 @@
 import type { CompletionItem, CompletionList } from 'vscode-languageserver';
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import type { StatementKeyLocation } from '../../lib/iam-policy/location.ts';
+import { formatStatementElementDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
 import { StatementKeys } from '../../lib/iam-policy/statement-keys.ts';
 import type { StatementContext } from '../../lib/treesitter/base.ts';
 import { type CompletionContext, partialRange } from './index.ts';
@@ -26,7 +27,7 @@ export function completeStatementKey(location: StatementKeyLocation, context: Co
       textEdit: { range, newText: name },
       documentation: {
         kind: MarkupKind.Markdown,
-        value: element.description,
+        value: formatStatementElementDocumentation(element),
       },
     });
   }

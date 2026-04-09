@@ -1,7 +1,6 @@
 ---
 includes:
-  - Federated identity
-  - Cognito
+  - Federated Identity
 ---
 Statement:
   - Effect: Allow

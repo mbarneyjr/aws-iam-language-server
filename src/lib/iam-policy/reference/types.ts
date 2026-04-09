@@ -1,12 +1,5 @@
 export type Services = Array<{ service: string; url: string }>;
 
-export type GlobalConditionKey = {
-  name: string;
-  valueType: 'single' | 'multi';
-  availability: string;
-  description: string;
-};
-
 export type RawReference = {
   Name: string;
   Version: string;
@@ -43,11 +36,7 @@ export type ServiceData = {
   name: string;
   url?: string;
   actions: Record<string, Action>;
-  resources: Array<{
-    name: string;
-    arnFormats: Array<string>;
-    conditionKeys: Array<string>;
-  }>;
+  resources: Array<ResourceDef>;
   conditionKeys: Record<string, ConditionKey>;
 };
 
@@ -66,12 +55,36 @@ export type Action = {
 };
 
 export type ResourceDef = {
+  service: string;
   name: string;
   arnFormats: Array<string>;
   conditionKeys: Array<string>;
 };
 
 export type ConditionKey = {
+  name: string;
   types: Array<string>;
   description?: string;
+  availability?: string;
+};
+
+export type Effect = {
+  name: string;
+  description: string;
+};
+
+export type PrincipalBlockAttribute = {
+  name: string;
+  description: string;
+};
+
+export type PrincipalType = {
+  name: string;
+  description: string;
+  patterns: Array<string>;
+};
+
+export type PrincipalTypedValue = {
+  name: string;
+  description: string;
 };

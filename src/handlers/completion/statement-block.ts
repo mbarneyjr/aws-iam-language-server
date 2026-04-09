@@ -35,7 +35,7 @@ export function completeStatementBlock(location: StatementBlockLocation, context
 }
 
 export function findHclElement(key: string) {
-  for (const [, element] of Object.entries(StatementKeys)) {
+  for (const [_, element] of Object.entries(StatementKeys)) {
     if (element.hclKey === key) return element;
   }
   return null;
@@ -45,7 +45,6 @@ function deriveExistingKeys(statement: StatementContext | null): string[] {
   if (!statement) return [];
   const keys: string[] = [];
   for (const [name, element] of Object.entries(StatementKeys)) {
-    // sub-blocks (condition, principals, not_principals) allow multiples — never exclude them
     if (name === 'Condition' || name === 'Principal' || name === 'NotPrincipal') continue;
     if (name in statement) {
       keys.push(element.hclKey);

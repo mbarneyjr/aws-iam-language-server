@@ -23,6 +23,7 @@ export async function run() {
       name: raw.Name,
       actions: {},
       resources: (raw.Resources ?? []).map((r) => ({
+        service: reference.service,
         name: r.Name,
         arnFormats: r.ARNFormats,
         conditionKeys: r.ConditionKeys ?? [],
@@ -42,6 +43,7 @@ export async function run() {
 
     for (const key of raw.ConditionKeys ?? []) {
       serviceData.conditionKeys[key.Name] = {
+        name: key.Name,
         types: key.Types,
       };
     }

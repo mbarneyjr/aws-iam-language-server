@@ -1,6 +1,6 @@
 ---
 includes:
-  - aws:RequestTag/Department
+  - aws:RequestTag/${TagKey}
 ---
 Statement:
   - Effect: Allow

@@ -38,7 +38,6 @@ function tokensMatch(a: string, b: string): boolean {
   if (a === b) return true;
   if (a === '*' || b === '*') return true;
   if (a.includes('?') || b.includes('?')) return true;
-  // Placeholders expect a value — don't match empty strings
   if (a !== '' && b !== '' && (placeholderPattern.test(a) || placeholderPattern.test(b))) return true;
   return false;
 }
