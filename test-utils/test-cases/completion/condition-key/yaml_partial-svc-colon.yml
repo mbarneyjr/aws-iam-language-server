@@ -1,0 +1,17 @@
+---
+includes:
+  - s3:ResourceAccount
+  - s3:TlsVersion
+  - s3:authType
+excludes:
+  - aws:PrincipalArn
+  - aws:SourceIp
+---
+Statement:
+  - Effect: Allow
+    Action:
+      - s3:GetObject
+    Resource: "*"
+    Condition:
+      StringEquals:
+        s3:$0

@@ -1,10 +1,6 @@
 ---
-includes:
-  - "lambda.amazonaws.com"
-  - "s3.amazonaws.com"
-excludes:
-  - "*"
-  - "arn:${Partition}:iam::${Account}:root"
+exact: true
+includes: []
 ---
 Statement:
   - Effect: Allow

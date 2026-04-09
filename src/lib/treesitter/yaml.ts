@@ -472,7 +472,7 @@ export class TreeYaml extends TreeBase {
         // a mapping {s3: null} instead of a scalar). If the mapping has one pair with
         // no value and sits inside a block_sequence_item, collapse it: treat the key
         // text + ":" as a partial value and skip past the mapping.
-        if (this.#isColonInducedMapping(current)) {
+        if (this.#isColonInducedMapping(current) || this.#isColonInducedMappingInPairValue(current, position)) {
           const pair = current.namedChildren.find((child) => child.type === 'block_mapping_pair');
           const keyText = pair ? this.#getPairKeyText(pair) : null;
           if (keyText) {
@@ -527,7 +527,11 @@ export class TreeYaml extends TreeBase {
       // When nodeBefore lands on the ":" inside a colon-induced mapping, we enter
       // via the inner pair (setting role='value', keys=['s3']). When we reach the
       // parent mapping, undo that contribution and collapse to colonPartial.
-      if (current.type === 'block_mapping' && role !== null && this.#isColonInducedMapping(current)) {
+      if (
+        current.type === 'block_mapping' &&
+        role !== null &&
+        (this.#isColonInducedMapping(current) || this.#isColonInducedMappingInPairValue(current, position))
+      ) {
         const pair = current.namedChildren.find((child) => child.type === 'block_mapping_pair');
         const keyText = pair ? this.#getPairKeyText(pair) : null;
         if (keyText && keys.length > 0 && keys[0] === keyText) {
@@ -696,6 +700,24 @@ export class TreeYaml extends TreeBase {
     let parent: Node | null = mapping.parent;
     while (parent && parent.type === 'block_node') parent = parent.parent;
     return parent?.type === 'block_sequence_item';
+  }
+
+  /**
+   * Detect a colon-induced mapping inside a mapping pair value (e.g., "s3:" under
+   * "StringEquals:" is parsed as a nested mapping {s3: null} instead of a scalar value).
+   * Only matches when the cursor is on the pair's line with no space after the colon
+   * (position at or before the pair end). When there IS a space (cursor past pair end),
+   * the existing pairOnLine check handles it as a legitimate key-value context.
+   */
+  #isColonInducedMappingInPairValue(mapping: Node, position: Position): boolean {
+    const pairs = mapping.namedChildren.filter((child) => child.type === 'block_mapping_pair');
+    if (pairs.length !== 1) return false;
+    if (pairs[0].namedChildren.length > 1) return false;
+    if (pairs[0].startPosition.row !== position.line) return false;
+    if (position.character > pairs[0].endPosition.column) return false;
+    let parent: Node | null = mapping.parent;
+    while (parent && parent.type === 'block_node') parent = parent.parent;
+    return parent?.type === 'block_mapping_pair';
   }
 
   /**
