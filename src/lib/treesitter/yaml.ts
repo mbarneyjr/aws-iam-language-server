@@ -420,7 +420,11 @@ export class TreeYaml extends TreeBase {
    */
   #isStatementSequence(sequence: Node): boolean {
     const sequenceParent = this.#skipBlockNode(sequence.parent);
-    return sequenceParent?.type === 'block_mapping_pair' && this.#getPairKeyText(sequenceParent) === 'Statement';
+    return (
+      sequenceParent?.type === 'block_mapping_pair' &&
+      this.#getPairKeyText(sequenceParent) === 'Statement' &&
+      this.#hasValidVersion(sequenceParent)
+    );
   }
 
   #resolveCursorContext(node: Node, statementMapping: Node, position: Position): CursorContext | null {
@@ -749,7 +753,54 @@ export class TreeYaml extends TreeBase {
     if (node?.type !== 'block_sequence') return false;
     node = this.#skipBlockNode(node.parent);
     if (node?.type !== 'block_mapping_pair') return false;
-    return this.#getPairKeyText(node) === 'Statement';
+    return this.#getPairKeyText(node) === 'Statement' && this.#hasValidVersion(node);
+  }
+
+  /**
+   * Check that a Statement pair's parent block_mapping contains a Version pair
+   * with a valid IAM policy version value.
+   */
+  #hasValidVersion(statementPair: Node): boolean {
+    const validVersions = new Set(['2012-10-17', '2008-10-17']);
+    const policyMapping = statementPair.parent;
+    if (!policyMapping || policyMapping.type !== 'block_mapping') return false;
+    for (const child of policyMapping.namedChildren) {
+      if (child.type !== 'block_mapping_pair') continue;
+      if (this.#getPairKeyText(child) !== 'Version') continue;
+      const values = this.#readPairStringValues(child);
+      return values.length === 1 && validVersions.has(values[0]);
+    }
+    return false;
+  }
+
+  /**
+   * Check for a valid Version in an ERROR node's children. Looks for a "Version"
+   * flow_node followed by a valid version string, or a block_mapping_pair with
+   * key "Version" and valid value.
+   */
+  #errorNodeHasValidVersion(errorNode: Node): boolean {
+    const validVersions = new Set(['2012-10-17', '2008-10-17']);
+    let sawVersionKey = false;
+    for (const child of errorNode.children) {
+      if (child.type === 'block_mapping_pair') {
+        const key = this.#getPairKeyText(child);
+        if (key === 'Version') {
+          const values = this.#readPairStringValues(child);
+          if (values.length === 1 && validVersions.has(values[0])) return true;
+        }
+        sawVersionKey = false;
+      } else if (child.type === 'flow_node') {
+        const text = this.#getScalarText(child);
+        if (text === 'Version') {
+          sawVersionKey = true;
+        } else if (sawVersionKey && text !== null && validVersions.has(text)) {
+          return true;
+        } else if (text !== ':') {
+          sawVersionKey = false;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -866,6 +917,9 @@ export class TreeYaml extends TreeBase {
     }
 
     if (!errorNode) return null;
+
+    // Pre-scan ERROR children for a valid Version pair
+    if (!this.#errorNodeHasValidVersion(errorNode)) return null;
 
     // Scan ERROR children for a Statement-like structure: "Statement" + ":"
     let foundStatement = false;

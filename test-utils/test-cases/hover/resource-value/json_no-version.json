@@ -1,0 +1,12 @@
+---
+isNull: true
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["lambda:InvokeFunction"],
+      "Resource": "arn:aws:lambda$0:us-east-1::function:my-func"
+    }
+  ]
+}

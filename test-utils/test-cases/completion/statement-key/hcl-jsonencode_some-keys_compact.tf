@@ -11,7 +11,8 @@ includes:
   - Condition
 ---
 resource "aws_iam_policy" "x" {
-policy = jsonencode({Statement = [{Effect = "Allow"
+policy = jsonencode({Version = "2012-10-17"
+Statement = [{Effect = "Allow"
 $0
 }]})
 }

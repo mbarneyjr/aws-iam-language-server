@@ -3,6 +3,7 @@ excludes:
   - "arn:aws:s3:us-east-1::access-grants/default"
   - "arn:aws:s3:::${BucketName}"
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Action:

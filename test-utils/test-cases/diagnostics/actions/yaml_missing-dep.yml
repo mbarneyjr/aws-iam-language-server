@@ -3,6 +3,7 @@ code: DEPENDENT_ACTION
 includes:
   - iam:CreateServiceLinkedRole
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Action:

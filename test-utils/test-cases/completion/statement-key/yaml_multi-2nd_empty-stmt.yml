@@ -11,9 +11,9 @@ includes:
   - NotResource
   - Condition
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Action: '*'
     Resource: '*'
   - $0
-Version: version

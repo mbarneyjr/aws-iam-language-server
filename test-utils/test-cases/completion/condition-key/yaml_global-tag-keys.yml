@@ -9,6 +9,7 @@ excludes:
   - aws:RequestTag/tag-key
   - aws:PrincipalTag/tag-key
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Action:

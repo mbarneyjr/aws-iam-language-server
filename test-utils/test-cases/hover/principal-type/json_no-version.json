@@ -1,0 +1,15 @@
+---
+isNull: true
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "*",
+      "Principal": {
+        "Ser$0vice": "lambda.amazonaws.com"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+---
+isNull: true
+---
+{
+  "Statement": [
+    {
+      "Eff$0ect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "*"
+    }
+  ]
+}

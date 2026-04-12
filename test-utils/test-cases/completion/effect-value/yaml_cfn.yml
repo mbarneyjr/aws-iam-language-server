@@ -9,5 +9,6 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       PolicyDocument:
+        Version: '2012-10-17'
         Statement:
           - Effect: $0

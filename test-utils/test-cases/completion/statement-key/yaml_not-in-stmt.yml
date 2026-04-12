@@ -4,4 +4,5 @@ includes: []
 ---
 Resources:
   MyRole:
+    Version: '2012-10-17'
     $0

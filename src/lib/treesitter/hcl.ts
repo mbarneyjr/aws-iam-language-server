@@ -406,8 +406,62 @@ export class TreeHcl extends TreeBase {
       current = current.parent;
     }
     if (current?.type !== 'object_elem') return false;
+    if (this.#getObjectElemKey(current) !== 'Statement') return false;
 
-    return this.#getObjectElemKey(current) === 'Statement';
+    // The policy object is the parent of this object_elem
+    const policyObject = current.parent;
+    if (!policyObject || policyObject.type !== 'object') return false;
+    return this.#hasValidJsonencodeVersion(policyObject);
+  }
+
+  #hasValidJsonencodeVersion(policyObject: Node): boolean {
+    const validVersions = new Set(['2012-10-17', '2008-10-17']);
+    for (const child of policyObject.namedChildren) {
+      if (child.type !== 'object_elem') continue;
+      if (this.#getObjectElemKey(child) !== 'Version') continue;
+      const expressions = child.namedChildren.filter((c) => c.type === 'expression');
+      const valueExpression = expressions.length >= 2 ? expressions[1] : null;
+      if (!valueExpression) return false;
+      const values = this.#readExpressionStringValues(valueExpression);
+      return values.length === 1 && validVersions.has(values[0]);
+    }
+    return false;
+  }
+
+  /**
+   * Check for a valid Version in an ERROR node's children for jsonencode mode.
+   * Looks for an object_elem with key "Version" and a valid version value, or
+   * an expression "Version" followed by an expression with a valid version string.
+   */
+  #errorNodeHasValidJsonencodeVersion(errorNode: Node): boolean {
+    const validVersions = new Set(['2012-10-17', '2008-10-17']);
+    let sawVersionKey = false;
+    for (const child of errorNode.children) {
+      if (child.type === 'object_elem') {
+        const key = this.#getObjectElemKey(child);
+        if (key === 'Version') {
+          const expressions = child.namedChildren.filter((c) => c.type === 'expression');
+          const valueExpression = expressions.length >= 2 ? expressions[1] : null;
+          if (valueExpression) {
+            const values = this.#readExpressionStringValues(valueExpression);
+            if (values.length === 1 && validVersions.has(values[0])) return true;
+          }
+        }
+        sawVersionKey = false;
+      } else if (child.type === 'expression') {
+        const id = this.#getExpressionIdentifier(child);
+        if (id === 'Version') {
+          sawVersionKey = true;
+        } else if (sawVersionKey) {
+          const values = this.#readExpressionStringValues(child);
+          if (values.length === 1 && validVersions.has(values[0])) return true;
+          sawVersionKey = false;
+        }
+      } else {
+        sawVersionKey = false;
+      }
+    }
+    return false;
   }
 
   #buildJsonencodeCursorPath(cursorNode: Node, statementObject: Node, position: Position) {
@@ -856,6 +910,9 @@ export class TreeHcl extends TreeBase {
     }
 
     if (!foundStatement || !lastKey || !policyFormat) return null;
+
+    // For jsonencode mode, require a valid Version in the ERROR node
+    if (policyFormat === 'standard' && !this.#errorNodeHasValidJsonencodeVersion(errorNode)) return null;
 
     // Extract partial and value: when the key came from an attribute/object_elem
     // that contains the quote (e.g., `effect = "`), they're empty. When the

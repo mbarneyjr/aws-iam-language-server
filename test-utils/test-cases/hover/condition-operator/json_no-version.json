@@ -1,0 +1,17 @@
+---
+isNull: true
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "*",
+      "Condition": {
+        "String$0Equals": {
+          "s3:ResourceAccount": "123456789012"
+        }
+      }
+    }
+  ]
+}

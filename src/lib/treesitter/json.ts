@@ -303,7 +303,23 @@ export class TreeJson extends TreeBase {
     if (object.parent?.type !== 'array') return false;
     const pair = object.parent.parent;
     if (pair?.type !== 'pair') return false;
-    return this.#getPairKeyText(pair) === 'Statement';
+    if (this.#getPairKeyText(pair) !== 'Statement') return false;
+    const policyObject = pair.parent;
+    if (!policyObject || policyObject.type !== 'object') return false;
+    return this.#hasValidVersion(policyObject);
+  }
+
+  #hasValidVersion(policyObject: Node): boolean {
+    const validVersions = new Set(['2012-10-17', '2008-10-17']);
+    for (const child of policyObject.namedChildren) {
+      if (child.type !== 'pair') continue;
+      if (this.#getPairKeyText(child) !== 'Version') continue;
+      const valueNode = child.namedChildren[1];
+      if (valueNode?.type !== 'string') return false;
+      const content = valueNode.namedChildren.find((c) => c.type === 'string_content');
+      return content?.text ? validVersions.has(content.text) : false;
+    }
+    return false;
   }
 
   /**

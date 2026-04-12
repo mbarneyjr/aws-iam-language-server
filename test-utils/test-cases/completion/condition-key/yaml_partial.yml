@@ -5,6 +5,7 @@ excludes:
   - s3:TlsVersion
   - s3:authType
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Action:

@@ -3,6 +3,7 @@ includes:
   - "service:action"
   - case-insensitive
 ---
+Version: '2012-10-17'
 Statement:
   - Effect: Allow
     Act$0ion:

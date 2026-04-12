@@ -1,0 +1,11 @@
+---
+isNull: true
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:Get$0Object"
+    }
+  ]
+}

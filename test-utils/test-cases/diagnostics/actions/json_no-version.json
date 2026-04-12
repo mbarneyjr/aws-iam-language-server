@@ -1,0 +1,14 @@
+---
+count: 0
+---
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "access-analyzer:CreateAnalyzer"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
