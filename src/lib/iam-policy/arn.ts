@@ -7,12 +7,39 @@ export type ArnParts = {
 };
 
 /**
+ * Split a string on `:` while preserving `${...}` placeholders intact.
+ * Colons inside `${...}` (e.g. `${AWS::AccountId}`) are not treated as delimiters.
+ */
+export function splitArn(arn: string): string[] {
+  const segments: string[] = [];
+  let current = '';
+  let depth = 0;
+  for (let i = 0; i < arn.length; i++) {
+    if (arn[i] === '$' && arn[i + 1] === '{') {
+      depth++;
+      current += '${';
+      i++;
+    } else if (depth > 0 && arn[i] === '}') {
+      depth--;
+      current += '}';
+    } else if (depth === 0 && arn[i] === ':') {
+      segments.push(current);
+      current = '';
+    } else {
+      current += arn[i];
+    }
+  }
+  segments.push(current);
+  return segments;
+}
+
+/**
  * Parse an ARN string into its structural components.
  * Returns null if the string is not a valid ARN structure (fewer than 6 colon-separated segments).
  * Everything after the 5th colon is treated as the resource portion.
  */
 export function parseArn(arn: string): ArnParts | null {
-  const segments = arn.split(':');
+  const segments = splitArn(arn);
   if (segments.length < 6) return null;
   if (segments[0] !== 'arn') return null;
 

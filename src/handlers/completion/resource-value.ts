@@ -1,5 +1,6 @@
 import type { CompletionItem, CompletionList } from 'vscode-languageserver';
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver';
+import { splitArn } from '../../lib/iam-policy/arn.ts';
 import type { ResourceValueLocation } from '../../lib/iam-policy/location.ts';
 import { partitions } from '../../lib/iam-policy/partitions.ts';
 import { formatResourceDocumentation } from '../../lib/iam-policy/reference/documentation.ts';
@@ -8,7 +9,7 @@ import { expandActionPattern } from '../../lib/iam-policy/wildcard.ts';
 import { type CompletionContext, partialRange } from './index.ts';
 
 export function completeResourceValue(location: ResourceValueLocation, context: CompletionContext): CompletionList {
-  const parts = location.partial.split(':');
+  const parts = splitArn(location.partial);
   const range = partialRange(context.position, location.partial.length);
   const items: Array<CompletionItem> = [];
   const statement = context.handler.getStatementContext(context.uri, context.position);
@@ -128,7 +129,7 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
     const resources = ServiceReference.getResourcesForActions(expandActionPattern(`${service}:*`));
     for (const resource of resources) {
       for (const arn of resource.arnFormats) {
-        const patternParts = arn.split(':');
+        const patternParts = splitArn(arn);
         const patternRegion = patternParts[3];
         const patternAccount = patternParts[4];
         if (region.length > 0 !== patternRegion.length > 0) continue;

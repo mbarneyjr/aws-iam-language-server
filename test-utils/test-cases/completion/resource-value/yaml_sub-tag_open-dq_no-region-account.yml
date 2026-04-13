@@ -1,8 +1,8 @@
 ---
 includes:
-  - "arn:aws:s3::123123123123:accesspoint/${AccessPointAlias}"
+  - "arn:aws:s3::${AWS::AccountId}:accesspoint/${AccessPointAlias}"
 excludes:
-  - "arn:aws:s3::123123123123:access-grants/default"
+  - "arn:aws:s3::${AWS::AccountId}:access-grants/default"
   - "arn:aws:s3:::${BucketName}"
 ---
 Version: '2012-10-17'
@@ -11,4 +11,4 @@ Statement:
     Action:
       - s3:GetObject
     Resource:
-      - !Sub "arn:aws:s3::123123123123:$0
+      - !Sub "arn:aws:s3::${AWS::AccountId}:$0
