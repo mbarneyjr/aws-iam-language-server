@@ -59,7 +59,7 @@ function validateArn(value: StatementValue): Array<Diagnostic> {
 
   if (segments.length > 4 && isRuleEnabled('INVALID_ACCOUNT')) {
     const account = segments[4];
-    if (account !== '*' && account !== '' && !accountIdPattern.test(account)) {
+    if (account !== '*' && account !== '' && !accountIdPattern.test(account) && !account.startsWith('${')) {
       diagnostics.push(
         createDiagnostic('INVALID_ACCOUNT', 'expected account id to be 12 digits', segmentRange(value, 4)),
       );
