@@ -1,0 +1,16 @@
+---
+code: INVALID_REGION
+count: 1
+includes:
+  - "invalid region for this partition"
+range:
+  start: { line: 6, character: 25 }
+  end: { line: 6, character: 34 }
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action:
+      - ec2:RunInstances
+    Resource:
+      - !Sub arn:aws:ec2:us-east-3:${AWS::AccountId}:instance/*

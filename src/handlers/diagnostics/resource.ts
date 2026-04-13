@@ -15,7 +15,7 @@ function segmentRange(value: StatementValue, segmentIndex: number): Range {
   for (let i = 0; i < segmentIndex; i++) {
     offset += segments[i].length + 1;
   }
-  const startCharacter = value.range.start.character + offset;
+  const startCharacter = value.range.end.character - value.text.length + offset;
   const endCharacter = startCharacter + segments[segmentIndex].length;
   return {
     start: { line: value.range.start.line, character: startCharacter },
@@ -34,7 +34,7 @@ function validateArn(value: StatementValue): Array<Diagnostic> {
     const partition = segments[1];
     if (partition === '') {
       diagnostics.push(createDiagnostic('INVALID_PARTITION', 'partition is required', segmentRange(value, 1)));
-    } else if (partition !== '*' && !Object.keys(partitions).includes(partition)) {
+    } else if (partition !== '*' && !Object.keys(partitions).includes(partition) && !partition.startsWith('${')) {
       diagnostics.push(
         createDiagnostic(
           'INVALID_PARTITION',
@@ -49,7 +49,12 @@ function validateArn(value: StatementValue): Array<Diagnostic> {
     const partition = segments[1];
     const region = segments[3];
     if (isValidPartition(partition)) {
-      if (region !== '*' && region !== '' && !isRegionValidForPartition(partition, region)) {
+      if (
+        region !== '*' &&
+        region !== '' &&
+        !isRegionValidForPartition(partition, region) &&
+        !region.startsWith('${')
+      ) {
         diagnostics.push(
           createDiagnostic('INVALID_REGION', 'invalid region for this partition', segmentRange(value, 3)),
         );

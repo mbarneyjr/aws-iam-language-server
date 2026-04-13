@@ -9,6 +9,11 @@ const extToLang: Record<string, 'yaml' | 'json' | 'hcl'> = {
   '.tf': 'hcl',
 };
 
+export interface ExpectedRange {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+}
+
 export interface DiagnosticTestCase {
   filename: string;
   category: string;
@@ -18,6 +23,7 @@ export interface DiagnosticTestCase {
   excludes?: string[];
   count?: number;
   code?: string;
+  range?: ExpectedRange;
   config?: Record<string, unknown>;
 }
 
@@ -44,6 +50,7 @@ function parseTestCaseFile(dir: string, category: string, filename: string): Dia
     excludes: meta.excludes as string[] | undefined,
     count: meta.count as number | undefined,
     code: meta.code as string | undefined,
+    range: meta.range as ExpectedRange | undefined,
     config: meta.config as Record<string, unknown> | undefined,
   };
 }

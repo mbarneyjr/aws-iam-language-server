@@ -7,7 +7,7 @@ import { resetConfig, updateConfig } from '../lib/config.ts';
 import { TreeManager } from '../lib/treesitter/manager.ts';
 import { diagnosticsHandler } from './diagnostics/diagnostics.ts';
 
-const categories = ['actions'];
+const categories = ['actions', 'resource'];
 
 describe('diagnosticsHandler', async () => {
   let treeManager: TreeManager;
@@ -76,6 +76,10 @@ describe('diagnosticsHandler', async () => {
                   `did not expect a diagnostic containing "${substring}"`,
                 );
               }
+            }
+            if (testCase.range) {
+              assert.ok(diagnostics.length > 0, 'expected at least one diagnostic for range assertion');
+              assert.deepEqual(diagnostics[0].range, testCase.range, 'diagnostic range mismatch');
             }
           } finally {
             if (testCase.config) resetConfig();
