@@ -7,7 +7,7 @@ buildNpmPackage {
   pname = "aws-iam-language-server";
   version = "0.0.0";
   src = ./..;
-  npmDepsHash = "sha256-mhFb8dFILuYkAPYQtbTNTuMomIuu8PUK/YFgkw0+TPI=";
+  npmDepsHash = "sha256-zhKwu5ArUPTNzi3411VL6ljvjBcpHbDOMJ0cul/R18w=";
   doCheck = true;
   checkPhase = ''
     npm test
