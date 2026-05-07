@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: scrape-release
@@ -20,23 +21,16 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
-      - name: create release
+      - name: create release and dispatch publish
         run: |
           set -euo pipefail
           VERSION="v$(node -p 'require("./package.json").version')"
-          if gh release view "$VERSION" >/dev/null 2>&1; then
+          if ! gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release create "$VERSION" \
+              --target "$GITHUB_SHA" \
+              --title "$VERSION" \
+              --generate-notes
+          else
             echo "release $VERSION already exists"
-            exit 0
           fi
-          gh release create "$VERSION" \
-            --target "$GITHUB_SHA" \
-            --title "$VERSION" \
-            --generate-notes
-
-  publish:
-    needs: release
-    uses: ./.github/workflows/publish.yml
-    permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
+          gh workflow run publish.yml --ref "$VERSION"
