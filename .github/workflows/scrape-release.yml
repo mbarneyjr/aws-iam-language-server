@@ -1,0 +1,85 @@
+name: scrape-release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/data/**'
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: scrape-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: bump version, refresh nix hash, tag, release
+        id: bump
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          NEW_VERSION="$(npm version patch --no-git-tag-version)"
+          NEW_HASH="$(nix run nixpkgs#prefetch-npm-deps -- package-lock.json)"
+          sed -i "s|npmDepsHash = \".*\"|npmDepsHash = \"$NEW_HASH\"|" nix/npm.nix nix/vscode.nix
+          git add package.json package-lock.json nix/npm.nix nix/vscode.nix
+          git commit -m "feat(package): bump version to $NEW_VERSION"
+          git push origin HEAD
+          gh release create "$NEW_VERSION" \
+            --target "$(git rev-parse HEAD)" \
+            --title "$NEW_VERSION" \
+            --generate-notes
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+  publish-npm:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release.outputs.version }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish
+
+  publish-vscode:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release.outputs.version }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          registry-url: https://registry.npmjs.org
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix build .#vscode
+      - run: npx vsce publish --packagePath ./result/aws-iam-language-server.vsix --pat "${{ secrets.VSCE_PAT }}"
