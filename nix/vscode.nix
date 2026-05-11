@@ -8,7 +8,7 @@ buildNpmPackage {
   pname = "aws-iam-language-server-vscode";
   version = "0.0.0";
   src = ./..;
-  npmDepsHash = "sha256-ELjSfe/uH5fuvbS6yeGGqgZZZzTsfDRvrd4wxzR8+50=";
+  npmDepsHash = "sha256-NlZluWY9rWVpog4NUqI72lcwV+XGR6NuZf9m+0G8/0o=";
   nativeBuildInputs = [ vsce ];
   buildPhase = ''
     runHook preBuild
