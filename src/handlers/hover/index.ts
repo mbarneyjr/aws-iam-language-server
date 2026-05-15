@@ -1,4 +1,5 @@
 import type { Connection, Hover, HoverParams } from 'vscode-languageserver';
+import { getConfig } from '../../lib/config.ts';
 import { type PolicyLocation, resolvePolicyLocation } from '../../lib/iam-policy/location.ts';
 import type { TreeManager } from '../../lib/treesitter/manager.ts';
 import { handleActionValueHover } from './action-value.ts';
@@ -15,6 +16,8 @@ import { handleStatementBlockHover } from './statement-block.ts';
 import { handleStatementKeyHover } from './statement-key.ts';
 
 export function hoverHandler(params: HoverParams, treeManager: TreeManager, connection: Connection): Hover | null {
+  if (!getConfig().hover.enabled) return null;
+
   const handler = treeManager.getLanguageHandler(params.textDocument.uri);
   if (!handler) return null;
 

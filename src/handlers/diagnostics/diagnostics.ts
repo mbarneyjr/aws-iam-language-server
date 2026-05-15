@@ -1,6 +1,6 @@
 import type { Connection, Diagnostic } from 'vscode-languageserver';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
-import { isRuleEnabled } from '../../lib/config.ts';
+import { getConfig, isRuleEnabled } from '../../lib/config.ts';
 import type { PolicyDocumentNode } from '../../lib/treesitter/base.ts';
 import type { TreeManager } from '../../lib/treesitter/manager.ts';
 import { ActionValidator } from './action.ts';
@@ -12,6 +12,11 @@ import { SidValidator } from './sid.ts';
 import { createDiagnostic } from './utils.ts';
 
 export async function diagnosticsHandler(document: TextDocument, treeManager: TreeManager, connection: Connection) {
+  if (!getConfig().diagnostics.enabled) {
+    await connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
+    return;
+  }
+
   const handler = treeManager.getLanguageHandler(document.uri);
   if (!handler) return;
 

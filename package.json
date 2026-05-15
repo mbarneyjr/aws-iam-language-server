@@ -20,6 +20,11 @@
     "configuration": {
       "title": "AWS IAM Language Server",
       "properties": {
+        "aws-iam-language-server.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable all diagnostics. When disabled, no diagnostics are reported."
+        },
         "aws-iam-language-server.diagnostics.DUPLICATE_KEY.enabled": {
           "type": "boolean",
           "default": true,
@@ -84,6 +89,16 @@
           "type": "boolean",
           "default": true,
           "description": "Warn when account ID is not 12 digits."
+        },
+        "aws-iam-language-server.hover.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable hover tooltips for IAM policy elements."
+        },
+        "aws-iam-language-server.documentLink.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable document links for IAM actions."
         }
       }
     }

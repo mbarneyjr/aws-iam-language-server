@@ -1,5 +1,6 @@
 import type { Connection, DocumentLink, DocumentLinkParams, TextDocuments } from 'vscode-languageserver';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
+import { getConfig } from '../../lib/config.ts';
 import { ServiceReference } from '../../lib/iam-policy/reference/services.ts';
 import type { TreeManager } from '../../lib/treesitter/manager.ts';
 
@@ -9,6 +10,8 @@ export function documentLinkHandler(
   treeManager: TreeManager,
   connection: Connection,
 ): DocumentLink[] {
+  if (!getConfig().documentLink.enabled) return [];
+
   const document = documents.get(params.textDocument.uri);
   if (!document) return [];
 
