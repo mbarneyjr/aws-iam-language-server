@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import type { Connection } from 'vscode-languageserver';
 import { loadHoverTests } from '../../test-utils/test-cases/hover/index.ts';
+import { resetConfig, updateConfig } from '../lib/config.ts';
 import { TreeManager } from '../lib/treesitter/manager.ts';
 import { hoverHandler } from './hover/index.ts';
 
@@ -35,6 +36,22 @@ describe('hoverHandler', async () => {
   } as unknown as Connection;
   before(async () => {
     treeManager = new TreeManager(connection);
+  });
+
+  describe('hover.enabled setting', async () => {
+    it('returns null when hover is disabled', async () => {
+      updateConfig({ hover: { enabled: false } });
+      const uri = 'test://hover-disabled';
+      const doc = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}';
+      await treeManager.openDocument(uri, doc, 'json');
+      const result = hoverHandler(
+        { position: { line: 0, character: 50 }, textDocument: { uri } },
+        treeManager,
+        connection,
+      );
+      assert.equal(result, null, 'expected no hover result when disabled');
+      resetConfig();
+    });
   });
 
   for (const category of categories) {

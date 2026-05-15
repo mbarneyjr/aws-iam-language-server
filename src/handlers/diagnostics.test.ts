@@ -34,6 +34,23 @@ describe('diagnosticsHandler', async () => {
     treeManager = new TreeManager(connection);
   });
 
+  describe('diagnostics.enabled setting', async () => {
+    it('returns no diagnostics when disabled', async () => {
+      updateConfig({ diagnostics: { enabled: false } });
+      try {
+        const uri = 'test://diagnostics-disabled';
+        const doc = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:FakeAction","Resource":"*"}]}';
+        await treeManager.openDocument(uri, doc, 'json');
+        const { connection, getDiagnostics } = createMockConnection();
+        const document = TextDocument.create(uri, 'json', 1, doc);
+        await diagnosticsHandler(document, treeManager, connection);
+        assert.equal(getDiagnostics().length, 0, 'expected no diagnostics when globally disabled');
+      } finally {
+        resetConfig();
+      }
+    });
+  });
+
   for (const category of categories) {
     describe(category, async () => {
       const tests = loadDiagnosticTests(category);

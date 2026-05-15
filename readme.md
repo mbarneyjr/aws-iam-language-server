@@ -19,8 +19,14 @@ Install the [extension](https://marketplace.visualstudio.com/items?itemName=Mich
 
 ```json
 {
-  // replace ${DIAGNOSTIC_RULE} with a diganostic rule id, like DEPENDENT_ACTION
-  "aws-iam-language-server.diagnostics.${DIAGNOSTIC_RULE}.enabled": true
+  // disable all diagnostics
+  "aws-iam-language-server.diagnostics.enabled": true,
+  // disable a specific diagnostic rule, replace ${DIAGNOSTIC_RULE} with a rule id like DEPENDENT_ACTION
+  "aws-iam-language-server.diagnostics.${DIAGNOSTIC_RULE}.enabled": true,
+  // disable hover tooltips
+  "aws-iam-language-server.hover.enabled": true,
+  // disable document links
+  "aws-iam-language-server.documentLink.enabled": true
 }
 ```
 
@@ -43,9 +49,15 @@ vim.lsp.config("aws-iam-language-server", {
   settings = {
     ["aws-iam-language-server"] = {
       diagnostics = {
-        -- replace ${DIAGNOSTIC_RULE} with a diganostic rule id, like DEPENDENT_ACTION
+        -- disable all diagnostics
+        enabled = false,
+        -- or disable a specific rule, replace ${DIAGNOSTIC_RULE} with a rule id like DEPENDENT_ACTION
         ${DIAGNOSTIC_RULE} = { enabled = false },
       },
+      -- disable hover tooltips
+      hover = { enabled = false },
+      -- disable document links
+      documentLink = { enabled = false },
     },
   },
 })
