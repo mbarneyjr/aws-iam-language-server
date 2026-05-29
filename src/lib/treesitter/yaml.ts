@@ -167,9 +167,13 @@ export class TreeYaml extends TreeBase {
     return entries;
   }
 
+  #getPairValueNode(pair: Node): Node | null {
+    return pair.namedChildren.find((child, i) => i > 0 && child.type !== 'comment') ?? null;
+  }
+
   #readPairStatementValues(pair: Node): StatementValue[] {
-    if (pair.namedChildren.length < 2) return [];
-    const valueNode = pair.namedChildren[1];
+    const valueNode = this.#getPairValueNode(pair);
+    if (!valueNode) return [];
 
     // Direct flow_node scalar
     if (valueNode.type === 'flow_node') {
@@ -217,14 +221,15 @@ export class TreeYaml extends TreeBase {
   }
 
   #getPairValueRange(pair: Node): Range {
-    if (pair.namedChildren.length < 2) {
+    const valueNode = this.#getPairValueNode(pair);
+    if (!valueNode) {
       // No value — zero-width range at key end
       return {
         start: { line: pair.endPosition.row, character: pair.endPosition.column },
         end: { line: pair.endPosition.row, character: pair.endPosition.column },
       };
     }
-    return nodeRange(pair.namedChildren[1]);
+    return nodeRange(valueNode);
   }
 
   /**
@@ -665,8 +670,8 @@ export class TreeYaml extends TreeBase {
    * Find a block_mapping in a pair's value, unwrapping block_node if present.
    */
   #findValueBlockMapping(pair: Node): Node | null {
-    if (pair.namedChildren.length < 2) return null;
-    let value: Node | null = pair.namedChildren[1];
+    let value: Node | null = this.#getPairValueNode(pair);
+    if (!value) return null;
     if (value.type === 'block_node') value = value.namedChildren[0] ?? null;
     return value?.type === 'block_mapping' ? value : null;
   }
@@ -675,8 +680,8 @@ export class TreeYaml extends TreeBase {
    * Find a block_sequence in a pair's value, unwrapping block_node if present.
    */
   #findValueBlockSequence(pair: Node): Node | null {
-    if (pair.namedChildren.length < 2) return null;
-    let value: Node | null = pair.namedChildren[1];
+    let value: Node | null = this.#getPairValueNode(pair);
+    if (!value) return null;
     if (value.type === 'block_node') value = value.namedChildren[0] ?? null;
     return value?.type === 'block_sequence' ? value : null;
   }
@@ -1052,8 +1057,8 @@ export class TreeYaml extends TreeBase {
    * Read string values from a mapping pair's value (scalar, block sequence, or flow sequence).
    */
   #readPairStringValues(pair: Node): string[] {
-    if (pair.namedChildren.length < 2) return [];
-    const valueNode = pair.namedChildren[1];
+    const valueNode = this.#getPairValueNode(pair);
+    if (!valueNode) return [];
 
     // Direct flow_node scalar
     if (valueNode.type === 'flow_node') {

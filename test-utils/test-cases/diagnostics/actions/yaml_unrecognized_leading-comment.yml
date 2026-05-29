@@ -1,0 +1,16 @@
+---
+code: UNRECOGNIZED_ACTION
+includes:
+  - s3:NotAValidPermission
+count: 1
+range:
+  start: { line: 5, character: 8 }
+  end: { line: 5, character: 30 }
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action:
+      # a comment
+      - s3:NotAValidPermission
+    Resource: "*"
