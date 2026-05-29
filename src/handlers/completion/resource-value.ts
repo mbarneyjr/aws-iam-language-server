@@ -16,9 +16,12 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
   const statementActions = statement?.Action ?? statement?.NotAction ?? [];
   const expandedActions = statementActions.flatMap(expandActionPattern);
   const resources = ServiceReference.getResourcesForActions(expandedActions);
+  const seenArns = new Set<string>();
   for (const resource of resources) {
     for (const arn of resource.arnFormats) {
       if (location.partial && !arn.toLowerCase().startsWith(location.partial.toLowerCase())) continue;
+      if (seenArns.has(arn)) continue;
+      seenArns.add(arn);
       items.push({
         label: arn,
         sortText: `0-${arn}`,
@@ -127,6 +130,7 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
     const region = parts[3];
     const account = parts[4];
     const resources = ServiceReference.getResourcesForActions(expandActionPattern(`${service}:*`));
+    const seenLabels = new Set<string>();
     for (const resource of resources) {
       for (const arn of resource.arnFormats) {
         const patternParts = splitArn(arn);
@@ -139,6 +143,8 @@ export function completeResourceValue(location: ResourceValueLocation, context: 
           .replace(`\${Region}`, parts[3])
           .replace(`\${Account}`, parts[4]);
         if (location.partial && !label.toLowerCase().startsWith(location.partial.toLowerCase())) continue;
+        if (seenLabels.has(label)) continue;
+        seenLabels.add(label);
         items.push({
           label,
           kind: CompletionItemKind.Enum,
