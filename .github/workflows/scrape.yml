@@ -25,6 +25,20 @@ jobs:
         uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: check out existing scrape branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "branch $BRANCH exists; checking it out to stack on top"
+            git fetch origin "$BRANCH"
+            git switch -c "$BRANCH" FETCH_HEAD
+            echo 'BRANCH_EXISTS=true' >> "$GITHUB_ENV"
+          else
+            echo "branch $BRANCH does not exist; will create from $GITHUB_REF_NAME"
+            echo 'BRANCH_EXISTS=false' >> "$GITHUB_ENV"
+          fi
       - run: npm ci
         working-directory: scraper
       - run: npm run scrape
@@ -32,17 +46,21 @@ jobs:
       - name: open pr
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if [ -z "$(git status --porcelain src/data)" ]; then
             echo 'no changes to scraped data'
             exit 0
           fi
-          NEW_VERSION="$(npm version patch --no-git-tag-version)"
-          NEW_HASH="$(nix run nixpkgs#prefetch-npm-deps -- package-lock.json)"
-          sed -i "s|npmDepsHash = \".*\"|npmDepsHash = \"$NEW_HASH\"|" nix/npm.nix nix/vscode.nix
-          git switch -c "$BRANCH"
-          git add src/data package.json package-lock.json nix/npm.nix nix/vscode.nix
+          git switch -c "$BRANCH" 2>/dev/null || git switch "$BRANCH"
+          if [ "$BRANCH_EXISTS" = 'true' ]; then
+            # already bumped on the first commit of this branch; just refresh the data
+            NEW_VERSION="v$(node -p "require('./package.json').version")"
+            git add src/data
+          else
+            NEW_VERSION="$(npm version patch --no-git-tag-version)"
+            NEW_HASH="$(nix run nixpkgs#prefetch-npm-deps -- package-lock.json)"
+            sed -i "s|npmDepsHash = \".*\"|npmDepsHash = \"$NEW_HASH\"|" nix/npm.nix nix/vscode.nix
+            git add src/data package.json package-lock.json nix/npm.nix nix/vscode.nix
+          fi
           git commit -m "chore(data): update scraped AWS IAM data ($NEW_VERSION)"
           git push origin "$BRANCH"
           if gh pr view "$BRANCH" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
