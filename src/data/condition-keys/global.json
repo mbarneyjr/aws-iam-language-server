@@ -248,6 +248,14 @@
     "description": "Use this key to check whether the request was sent using TLS. The request context returns true or false. In a policy, you can allow specific actions only if the request is sent using TLS."
   },
   {
+    "name": "aws:SignInSessionArn",
+    "types": [
+      "ARN"
+    ],
+    "availability": "This key is included in the request context when the request originates from an AWS Sign-In OAuth session. This key is not available for console sessions.",
+    "description": "Use this key to compare your AWS Sign-In OAuth session with the session that you specify in the policy.\n\nWhen you use an OAuth-based flow such as AWS CLI login (aws login) or AWS MCP Server, AWS Sign-In includes a sign-in session ARN in the issued credentials. AWS Sign-In propagates that ARN to subsequent requests made using OAuth access tokens. With this key, you can correlate API activity with the originating sign-in session and apply IAM policies to individual sessions.\n\nFor interactive OAuth flows, the refresh token determines the sign-in session ARN lifecycle. A new access token issued during a refresh continues to carry the same sign-in session ARN.\n\nFor non-interactive OAuth flows, the access token determines the sign-in session ARN lifecycle. Each new access token contains a new sign-in session ARN."
+  },
+  {
     "name": "aws:SourceAccount",
     "types": [
       "String"
