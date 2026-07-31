@@ -1,0 +1,28 @@
+---
+code: DUPLICATE_KEY
+count: 1
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:PrincipalTag/department": [
+            "eng"
+          ]
+        }
+      },
+      "Condition": {
+        "StringEquals": {
+          "aws:PrincipalTag/team": [
+            "platform"
+          ]
+        }
+      }
+    }
+  ]
+}

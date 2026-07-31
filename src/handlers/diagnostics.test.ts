@@ -7,7 +7,7 @@ import { resetConfig, updateConfig } from '../lib/config.ts';
 import { TreeManager } from '../lib/treesitter/manager.ts';
 import { diagnosticsHandler } from './diagnostics/diagnostics.ts';
 
-const categories = ['actions', 'resource'];
+const categories = ['actions', 'resource', 'duplicate-keys'];
 
 describe('diagnosticsHandler', async () => {
   let treeManager: TreeManager;
