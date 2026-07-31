@@ -13,7 +13,8 @@
   "activationEvents": [
     "onLanguage:json",
     "onLanguage:yaml",
-    "onLanguage:terraform"
+    "onLanguage:terraform",
+    "onLanguage:opentofu"
   ],
   "icon": "./images/iam.png",
   "contributes": {
