@@ -108,10 +108,10 @@ async function handleHclBlockDiagnostics(policyDocument: PolicyDocumentNode): Pr
   let diagnostics: Array<Diagnostic> = [];
   const sidValidator = new SidValidator();
   const effectValidator = new EffectValidator();
-  const principalValidator = new PrincipalValidator();
+  const principalValidator = new PrincipalValidator(true);
   const actionValidator = new ActionValidator(policyDocument, new Set(['actions', 'not_actions']));
   const resourceValidator = new ResourceValidator();
-  const conditionValidator = new ConditionValidator();
+  const conditionValidator = new ConditionValidator(true);
   for (const statement of policyDocument.statements) {
     const isResourcePolicy = statement.entries.some((e) => e.key === 'principals' || e.key === 'not_principals');
     for (const entry of statement.entries) {
