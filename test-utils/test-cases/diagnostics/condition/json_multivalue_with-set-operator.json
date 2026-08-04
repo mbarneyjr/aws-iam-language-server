@@ -1,0 +1,21 @@
+---
+code: MISSING_SET_OPERATOR
+count: 0
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "ForAnyValue:StringEquals": {
+          "kms:ResourceAliases": [
+            "alias/example"
+          ]
+        }
+      }
+    }
+  ]
+}

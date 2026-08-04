@@ -1,0 +1,15 @@
+---
+code: UNNECESSARY_SET_OPERATOR
+count: 1
+includes:
+  - kms:RequestAlias
+  - absent from the request
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: kms:Decrypt
+    Resource: '*'
+    Condition:
+      ForAllValues:StringEquals:
+        kms:RequestAlias: alias/example

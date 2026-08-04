@@ -1,0 +1,30 @@
+---
+code: MISSING_SET_OPERATOR
+count: 2
+includes:
+  - kms:ResourceAliases
+  - aws:TagKeys
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ResourceAliases": [
+            "alias/example"
+          ],
+          "aws:TagKeys": [
+            "department"
+          ],
+          "kms:RequestAlias": [
+            "alias/other"
+          ]
+        }
+      }
+    }
+  ]
+}

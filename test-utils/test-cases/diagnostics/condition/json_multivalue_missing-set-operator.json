@@ -1,0 +1,27 @@
+---
+code: MISSING_SET_OPERATOR
+count: 1
+includes:
+  - kms:ResourceAliases
+  - ForAnyValue
+range:
+  start: { line: 8, character: 8 }
+  end: { line: 8, character: 22 }
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ResourceAliases": [
+            "alias/example"
+          ]
+        }
+      }
+    }
+  ]
+}
