@@ -1,0 +1,23 @@
+---
+code: MISSING_SET_OPERATOR
+count: 1
+includes:
+  - kms:ResourceAliases
+---
+resource "aws_iam_policy" "example" {
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "kms:Decrypt"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ResourceAliases" = ["alias/example"]
+          }
+        }
+      }
+    ]
+  })
+}

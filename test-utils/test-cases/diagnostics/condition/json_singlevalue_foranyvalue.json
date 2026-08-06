@@ -1,0 +1,29 @@
+---
+code: UNNECESSARY_SET_OPERATOR
+count: 1
+includes:
+  - aws:PrincipalTag/department
+  - ForAnyValue
+excludes:
+  - absent from the request
+range:
+  start: { line: 8, character: 8 }
+  end: { line: 8, character: 34 }
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "*",
+      "Condition": {
+        "ForAnyValue:StringEquals": {
+          "aws:PrincipalTag/department": [
+            "eng"
+          ]
+        }
+      }
+    }
+  ]
+}

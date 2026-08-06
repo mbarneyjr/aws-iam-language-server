@@ -42,6 +42,15 @@ export const diagnosticRules = {
   INVALID_ACCOUNT: {
     description: 'Account ID must be 12 digits',
   },
+  MISSING_SET_OPERATOR: {
+    description: 'Multi-valued condition key used without ForAnyValue/ForAllValues',
+  },
+  UNNECESSARY_SET_OPERATOR: {
+    description: 'Single-valued condition key used with ForAnyValue/ForAllValues',
+  },
+  PERMISSIVE_SET_OPERATOR: {
+    description: 'ForAllValues in an Allow statement grants access when the condition key is absent',
+  },
 } as const satisfies Record<string, DiagnosticRule>;
 
 export type DiagnosticRuleId = keyof typeof diagnosticRules;
