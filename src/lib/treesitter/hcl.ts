@@ -519,10 +519,17 @@ export class TreeHcl extends TreeBase {
   #getObjectElemKey(element: Node): string | null {
     const keyExpression = element.namedChildren.find((child) => child.type === 'expression');
     if (!keyExpression) return null;
+
     const variableExpression = keyExpression.namedChildren.find((child) => child.type === 'variable_expr');
-    if (!variableExpression) return null;
-    const id = variableExpression.namedChildren.find((child) => child.type === 'identifier');
-    return id?.text ?? null;
+    if (variableExpression) {
+      const id = variableExpression.namedChildren.find((child) => child.type === 'identifier');
+      return id?.text ?? null;
+    }
+
+    const literal = keyExpression.namedChildren.find((child) => child.type === 'literal_value');
+    const string = literal?.namedChildren.find((child) => child.type === 'string_lit');
+    const template = string?.namedChildren.find((child) => child.type === 'template_literal');
+    return template?.text ?? null;
   }
 
   #findInnermostObject(node: Node, statementObject: Node): Node {

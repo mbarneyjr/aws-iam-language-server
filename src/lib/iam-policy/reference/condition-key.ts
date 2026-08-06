@@ -1,7 +1,7 @@
 import { ServiceReference } from './services.ts';
 import type { ConditionKey } from './types.ts';
 
-const placeholderPattern = /\$\{[^}]+\}/g;
+const placeholderPattern = /\$\{[^}]+\}/;
 
 function patternToRegex(pattern: string): RegExp {
   const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -30,6 +30,19 @@ export function findConditionKeyByPattern(keyName: string, service?: string) {
   }
 
   return null;
+}
+
+export function resolveConditionKey(keyName: string): ConditionKey | undefined {
+  const service = keyName.split(':')[0];
+  const global = ServiceReference.getGlobalConditionKeys().find((key) => key.name === keyName);
+  if (global) return global;
+
+  const serviceKey = ServiceReference.getConditionKey(service, keyName);
+  if (serviceKey) return serviceKey;
+
+  const match = findConditionKeyByPattern(keyName, service);
+  if (!match) return undefined;
+  return 'global' in match ? match.global : match.conditionKey;
 }
 
 export function isMultiValuedConditionKey(key: ConditionKey) {

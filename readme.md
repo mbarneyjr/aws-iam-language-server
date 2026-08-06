@@ -117,3 +117,5 @@ This language server will provide diagnostics for some IAM policy issues, includ
 - defined actions are valid, or wildcards resolve to valid actions
 - arn parts are valid (partition, region, account id)
 - dependent actions (`ecs:RunTask` requires `iam:PassRole`)
+- multi-valued condition keys (`kms:ResourceAliases`, `aws:TagKeys`) use a `ForAnyValue`/`ForAllValues` set operator
+- single-valued condition keys don't use a `ForAnyValue`/`ForAllValues` set operator
