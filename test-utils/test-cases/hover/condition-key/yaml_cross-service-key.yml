@@ -1,0 +1,15 @@
+---
+includes:
+  - identitystore:GroupId
+  - ArrayOfString
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action:
+      - qbusiness:CreateSubscription
+    Resource: "*"
+    Condition:
+      ForAnyValue:StringEquals:
+        identitystore:Grou$0pId:
+          - 94481408-a081-7053-1dbb-example

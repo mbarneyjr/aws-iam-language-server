@@ -1,0 +1,16 @@
+---
+code: INVALID_CONDITION_OPERATOR
+count: 0
+config:
+  diagnostics:
+    INVALID_CONDITION_OPERATOR:
+      enabled: false
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: kms:Decrypt
+    Resource: '*'
+    Condition:
+      StringEqual:
+        kms:RequestAlias: alias/example

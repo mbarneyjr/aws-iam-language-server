@@ -1,0 +1,13 @@
+---
+code: UNRECOGNIZED_CONDITION_KEY
+count: 0
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: s3:GetObject
+    Resource: '*'
+    Condition:
+      StringEquals:
+        notaservice:SomeKey: value
+        NoColonAtAll: value

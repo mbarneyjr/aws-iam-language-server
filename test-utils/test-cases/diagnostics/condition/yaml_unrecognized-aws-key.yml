@@ -1,0 +1,14 @@
+---
+code: UNRECOGNIZED_CONDITION_KEY
+count: 1
+includes:
+  - aws:NotARealGlobalKey
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: s3:GetObject
+    Resource: '*'
+    Condition:
+      StringEquals:
+        aws:NotARealGlobalKey: value

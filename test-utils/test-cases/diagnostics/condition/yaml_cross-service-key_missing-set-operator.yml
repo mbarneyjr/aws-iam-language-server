@@ -1,0 +1,15 @@
+---
+code: MISSING_SET_OPERATOR
+count: 1
+includes:
+  - identitystore:GroupId
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: qbusiness:CreateSubscription
+    Resource: '*'
+    Condition:
+      StringEquals:
+        identitystore:GroupId:
+          - 94481408-a081-7053-1dbb-example
