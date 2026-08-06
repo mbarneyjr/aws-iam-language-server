@@ -1,0 +1,15 @@
+---
+code: INVALID_CONDITION_OPERATOR
+count: 1
+includes:
+  - ForAnyValues
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: kms:Decrypt
+    Resource: '*'
+    Condition:
+      ForAnyValues:StringEquals:
+        kms:ResourceAliases:
+          - alias/example

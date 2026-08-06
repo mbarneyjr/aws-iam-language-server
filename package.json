@@ -106,6 +106,16 @@
           "default": true,
           "description": "Warn when ForAllValues is used in an Allow statement, which grants access if the condition key is absent from the request."
         },
+        "aws-iam-language-server.diagnostics.INVALID_CONDITION_OPERATOR.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when a condition operator does not match any known IAM condition operator."
+        },
+        "aws-iam-language-server.diagnostics.UNRECOGNIZED_CONDITION_KEY.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when a condition key does not match any known IAM condition key."
+        },
         "aws-iam-language-server.hover.enabled": {
           "type": "boolean",
           "default": true,

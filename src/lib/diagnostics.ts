@@ -51,6 +51,12 @@ export const diagnosticRules = {
   PERMISSIVE_SET_OPERATOR: {
     description: 'ForAllValues in an Allow statement grants access when the condition key is absent',
   },
+  INVALID_CONDITION_OPERATOR: {
+    description: 'Condition operator does not match any known IAM condition operator',
+  },
+  UNRECOGNIZED_CONDITION_KEY: {
+    description: 'Condition key does not match any known IAM condition key',
+  },
 } as const satisfies Record<string, DiagnosticRule>;
 
 export type DiagnosticRuleId = keyof typeof diagnosticRules;

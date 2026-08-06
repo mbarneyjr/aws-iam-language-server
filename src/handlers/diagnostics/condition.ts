@@ -1,11 +1,34 @@
 import { type Diagnostic, DiagnosticSeverity } from 'vscode-languageserver';
 import { isRuleEnabled } from '../../lib/config.ts';
-import { isMultiValuedConditionKey, resolveConditionKey } from '../../lib/iam-policy/reference/condition-key.ts';
+import { conditionOperators } from '../../lib/iam-policy/condition-operators.ts';
+import {
+  isKnownConditionKeyNamespace,
+  isMultiValuedConditionKey,
+  resolveConditionKey,
+} from '../../lib/iam-policy/reference/condition-key.ts';
 import type { Range, StatementEntry } from '../../lib/treesitter/base.ts';
 import { ElementValidator } from './base.ts';
 import { createDiagnostic } from './utils.ts';
 
 const setOperatorPattern = /^(ForAnyValue|ForAllValues):/;
+
+// The operator data enumerates set operator and IfExists spellings separately, and omits the
+// combination of the two, so validate the bare operator name and its modifiers independently.
+const bareOperators = new Set(
+  Object.keys(conditionOperators).filter((name) => !name.includes(':') && !name.endsWith('IfExists')),
+);
+
+function isValidConditionOperator(operator: string): boolean {
+  const hasSetOperator = setOperatorPattern.test(operator);
+  const withoutSetOperator = operator.replace(setOperatorPattern, '');
+  const hasIfExists = withoutSetOperator.endsWith('IfExists');
+  const bareOperator = hasIfExists ? withoutSetOperator.slice(0, -'IfExists'.length) : withoutSetOperator;
+
+  if (!bareOperators.has(bareOperator)) return false;
+  // Null tests for key presence, so it takes neither modifier.
+  if (bareOperator === 'Null') return !hasSetOperator && !hasIfExists;
+  return true;
+}
 
 export class ConditionValidator extends ElementValidator {
   validate(entry: StatementEntry, effect?: string): Array<Diagnostic> {
@@ -65,10 +88,27 @@ export class ConditionValidator extends ElementValidator {
     return null;
   }
 
+  #operatorDiagnostic(operator: string, range: Range): Diagnostic | null {
+    if (!isRuleEnabled('INVALID_CONDITION_OPERATOR') || isValidConditionOperator(operator)) return null;
+    return createDiagnostic('INVALID_CONDITION_OPERATOR', `"${operator}" is not a valid condition operator`, range);
+  }
+
+  #keyDiagnostic(keyName: string, range: Range): Diagnostic | null {
+    if (!isRuleEnabled('UNRECOGNIZED_CONDITION_KEY')) return null;
+    if (!isKnownConditionKeyNamespace(keyName) || resolveConditionKey(keyName)) return null;
+    return createDiagnostic('UNRECOGNIZED_CONDITION_KEY', `Unrecognized condition key "${keyName}"`, range);
+  }
+
   #validateOperators(operators: Array<StatementEntry>, effect: string): Array<Diagnostic> {
     const diagnostics: Array<Diagnostic> = [];
     for (const operator of operators) {
+      const operatorDiagnostic = this.#operatorDiagnostic(operator.key, operator.keyRange);
+      if (operatorDiagnostic) diagnostics.push(operatorDiagnostic);
+
       for (const key of operator.children ?? []) {
+        const keyDiagnostic = this.#keyDiagnostic(key.key, key.keyRange);
+        if (keyDiagnostic) diagnostics.push(keyDiagnostic);
+
         const diagnostic = this.#setOperatorDiagnostic(operator.key, key.key, operator.keyRange, effect);
         if (diagnostic) diagnostics.push(diagnostic);
       }
@@ -80,12 +120,21 @@ export class ConditionValidator extends ElementValidator {
     const conditionOperator = attributes.find((attribute) => attribute.key === 'test')?.values[0];
     const conditionKey = attributes.find((attribute) => attribute.key === 'variable')?.values[0];
     if (!conditionOperator || !conditionKey) return [];
+
+    const diagnostics: Array<Diagnostic> = [];
+    const operatorDiagnostic = this.#operatorDiagnostic(conditionOperator.text, conditionOperator.range);
+    if (operatorDiagnostic) diagnostics.push(operatorDiagnostic);
+
+    const keyDiagnostic = this.#keyDiagnostic(conditionKey.text, conditionKey.range);
+    if (keyDiagnostic) diagnostics.push(keyDiagnostic);
+
     const diagnostic = this.#setOperatorDiagnostic(
       conditionOperator.text,
       conditionKey.text,
       conditionOperator.range,
       effect,
     );
-    return diagnostic ? [diagnostic] : [];
+    if (diagnostic) diagnostics.push(diagnostic);
+    return diagnostics;
   }
 }

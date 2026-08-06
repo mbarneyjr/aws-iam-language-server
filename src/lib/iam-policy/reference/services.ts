@@ -2,24 +2,30 @@ import { readFileSync } from 'node:fs';
 import { type ArnParts, arnMatches, parseArn } from '../arn.ts';
 import type { Action, ConditionKey, ResourceDef, ServiceData } from './types.ts';
 
+const serviceNamePattern = /^[a-z0-9][a-z0-9-]*$/;
+
 export class ServiceReference {
   static #serviceDataMap: Record<string, ServiceData> = {};
   static #allActions: Array<string>;
+  static #allConditionKeys: Record<string, ConditionKey>;
   static #allServices: Array<string>;
   static #servicePrincipals: Array<string>;
   static #globalConditionKeys: Array<ConditionKey>;
 
   static getServiceData(service: string): ServiceData | undefined {
-    if (!ServiceReference.#serviceDataMap[service]) {
+    const name = service.toLowerCase();
+    if (!serviceNamePattern.test(name)) return undefined;
+
+    if (!ServiceReference.#serviceDataMap[name]) {
       try {
-        ServiceReference.#serviceDataMap[service] = JSON.parse(
-          readFileSync(`${import.meta.dirname}/../../../data/servicereference/services/${service}.json`, 'utf-8'),
+        ServiceReference.#serviceDataMap[name] = JSON.parse(
+          readFileSync(`${import.meta.dirname}/../../../data/servicereference/services/${name}.json`, 'utf-8'),
         );
       } catch {
         return undefined;
       }
     }
-    return ServiceReference.#serviceDataMap[service];
+    return ServiceReference.#serviceDataMap[name];
   }
 
   static getServicePrincipals(): Array<string> {
@@ -33,6 +39,19 @@ export class ServiceReference {
       }
     }
     return ServiceReference.#servicePrincipals;
+  }
+
+  static getAllConditionKeys(): Record<string, ConditionKey> {
+    if (!ServiceReference.#allConditionKeys) {
+      try {
+        ServiceReference.#allConditionKeys = JSON.parse(
+          readFileSync(`${import.meta.dirname}/../../../data/servicereference/condition-keys.json`, 'utf-8'),
+        );
+      } catch {
+        return {};
+      }
+    }
+    return ServiceReference.#allConditionKeys;
   }
 
   static getAllActions(): Array<string> {

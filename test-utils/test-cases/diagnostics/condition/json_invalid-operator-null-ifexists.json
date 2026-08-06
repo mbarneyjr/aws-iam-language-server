@@ -1,0 +1,21 @@
+---
+code: INVALID_CONDITION_OPERATOR
+count: 1
+includes:
+  - NullIfExists
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "NullIfExists": {
+          "kms:RequestAlias": "false"
+        }
+      }
+    }
+  ]
+}

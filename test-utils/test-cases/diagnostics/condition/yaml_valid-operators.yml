@@ -1,0 +1,20 @@
+---
+code: INVALID_CONDITION_OPERATOR
+count: 0
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: s3:GetObject
+    Resource: '*'
+    Condition:
+      Bool:
+        aws:SecureTransport: 'true'
+      ArnLike:
+        aws:PrincipalArn: arn:aws:iam::123456789012:role/example
+      NumericLessThanEquals:
+        aws:MultiFactorAuthAge: '3600'
+      DateGreaterThan:
+        aws:CurrentTime: '2026-01-01T00:00:00Z'
+      StringNotEqualsIgnoreCaseIfExists:
+        aws:PrincipalAccount: '123456789012'

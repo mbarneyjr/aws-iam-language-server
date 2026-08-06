@@ -1,0 +1,13 @@
+---
+code: INVALID_CONDITION_OPERATOR
+count: 0
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Deny
+    Action: s3:GetObject
+    Resource: '*'
+    Condition:
+      ForAnyValue:StringLikeIfExists:
+        aws:TagKeys:
+          - department

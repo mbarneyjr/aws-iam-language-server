@@ -1,0 +1,14 @@
+---
+code: UNRECOGNIZED_CONDITION_KEY
+count: 0
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: s3:GetObject
+    Resource: '*'
+    Condition:
+      IpAddress:
+        aws:sourceip: 10.0.0.0/8
+      StringEquals:
+        aws:PrincipalOrgId: o-example

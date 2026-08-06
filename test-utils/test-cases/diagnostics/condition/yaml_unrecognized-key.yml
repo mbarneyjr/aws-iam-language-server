@@ -1,0 +1,14 @@
+---
+code: UNRECOGNIZED_CONDITION_KEY
+count: 1
+includes:
+  - kms:NotARealConditionKey
+---
+Version: '2012-10-17'
+Statement:
+  - Effect: Allow
+    Action: kms:Decrypt
+    Resource: '*'
+    Condition:
+      StringEquals:
+        kms:NotARealConditionKey: alias/example
