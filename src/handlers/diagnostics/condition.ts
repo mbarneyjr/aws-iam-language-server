@@ -8,15 +8,17 @@ import { createDiagnostic } from './utils.ts';
 const setOperatorPattern = /^(ForAnyValue|ForAllValues):/;
 
 export class ConditionValidator extends ElementValidator {
-  validate(entry: StatementEntry): Array<Diagnostic> {
+  validate(entry: StatementEntry, effect?: string): Array<Diagnostic> {
     const diagnostics = super.validate(entry);
 
     const children = entry.children ?? [];
     const isHclBlock = children.some((child) => child.key === 'test');
-    return diagnostics.concat(isHclBlock ? this.#validateHclBlock(children) : this.#validateOperators(children));
+    return diagnostics.concat(
+      isHclBlock ? this.#validateHclBlock(children, effect ?? '') : this.#validateOperators(children, effect ?? ''),
+    );
   }
 
-  #setOperatorDiagnostic(operator: string, keyName: string, range: Range): Diagnostic | null {
+  #setOperatorDiagnostic(operator: string, keyName: string, range: Range, effect: string): Diagnostic | null {
     if (operator === 'Null') return null;
 
     const key = resolveConditionKey(keyName);
@@ -24,6 +26,20 @@ export class ConditionValidator extends ElementValidator {
 
     const multiValued = isMultiValuedConditionKey(key);
     const setOperator = operator.match(setOperatorPattern)?.[1];
+
+    if (
+      isRuleEnabled('PERMISSIVE_SET_OPERATOR') &&
+      setOperator === 'ForAllValues' &&
+      multiValued &&
+      effect === 'Allow'
+    ) {
+      return createDiagnostic(
+        'PERMISSIVE_SET_OPERATOR',
+        `"ForAllValues:" evaluates to true when "${keyName}" is absent from the request, so this "Allow" grants access instead of restricting it (pair it with a "Null" check on "${keyName}", or use "Deny")`,
+        range,
+        DiagnosticSeverity.Error,
+      );
+    }
 
     if (isRuleEnabled('MISSING_SET_OPERATOR') && multiValued && !setOperator) {
       return createDiagnostic(
@@ -49,22 +65,27 @@ export class ConditionValidator extends ElementValidator {
     return null;
   }
 
-  #validateOperators(operators: Array<StatementEntry>): Array<Diagnostic> {
+  #validateOperators(operators: Array<StatementEntry>, effect: string): Array<Diagnostic> {
     const diagnostics: Array<Diagnostic> = [];
     for (const operator of operators) {
       for (const key of operator.children ?? []) {
-        const diagnostic = this.#setOperatorDiagnostic(operator.key, key.key, operator.keyRange);
+        const diagnostic = this.#setOperatorDiagnostic(operator.key, key.key, operator.keyRange, effect);
         if (diagnostic) diagnostics.push(diagnostic);
       }
     }
     return diagnostics;
   }
 
-  #validateHclBlock(attributes: Array<StatementEntry>): Array<Diagnostic> {
+  #validateHclBlock(attributes: Array<StatementEntry>, effect: string): Array<Diagnostic> {
     const conditionOperator = attributes.find((attribute) => attribute.key === 'test')?.values[0];
     const conditionKey = attributes.find((attribute) => attribute.key === 'variable')?.values[0];
     if (!conditionOperator || !conditionKey) return [];
-    const diagnostic = this.#setOperatorDiagnostic(conditionOperator.text, conditionKey.text, conditionOperator.range);
+    const diagnostic = this.#setOperatorDiagnostic(
+      conditionOperator.text,
+      conditionKey.text,
+      conditionOperator.range,
+      effect,
+    );
     return diagnostic ? [diagnostic] : [];
   }
 }

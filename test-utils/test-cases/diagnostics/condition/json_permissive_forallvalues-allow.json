@@ -1,0 +1,26 @@
+---
+code: PERMISSIVE_SET_OPERATOR
+count: 1
+includes:
+  - aws:TagKeys
+range:
+  start: { line: 8, character: 8 }
+  end: { line: 8, character: 35 }
+---
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "department"
+          ]
+        }
+      }
+    }
+  ]
+}

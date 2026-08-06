@@ -48,6 +48,8 @@ async function handleStandardDiagnostics(policyDocument: PolicyDocumentNode): Pr
   const conditionValidator = new ConditionValidator();
   for (const statement of policyDocument.statements) {
     const isResourcePolicy = statement.entries.some((e) => e.key === 'Principal' || e.key === 'NotPrincipal');
+    const effect = statement.entries.find((e) => e.key === 'Effect')?.values[0]?.text;
+
     for (const entry of statement.entries) {
       if (entry.key === 'Sid') {
         diagnostics = diagnostics.concat(sidValidator.validate(entry, isResourcePolicy));
@@ -60,7 +62,7 @@ async function handleStandardDiagnostics(policyDocument: PolicyDocumentNode): Pr
       } else if (entry.key === 'Resource' || entry.key === 'NotResource') {
         diagnostics = diagnostics.concat(resourceValidator.validate(entry));
       } else if (entry.key === 'Condition') {
-        diagnostics = diagnostics.concat(conditionValidator.validate(entry));
+        diagnostics = diagnostics.concat(conditionValidator.validate(entry, effect));
       } else if (isRuleEnabled('UNRECOGNIZED_KEY')) {
         diagnostics.push(
           createDiagnostic('UNRECOGNIZED_KEY', `Unrecognized entry "${entry.key}" in statement`, entry.keyRange),
@@ -114,6 +116,8 @@ async function handleHclBlockDiagnostics(policyDocument: PolicyDocumentNode): Pr
   const conditionValidator = new ConditionValidator(true);
   for (const statement of policyDocument.statements) {
     const isResourcePolicy = statement.entries.some((e) => e.key === 'principals' || e.key === 'not_principals');
+    const effect = statement.entries.find((e) => e.key === 'effect')?.values[0]?.text;
+
     for (const entry of statement.entries) {
       if (entry.key === 'sid') {
         diagnostics = diagnostics.concat(sidValidator.validate(entry, isResourcePolicy));
@@ -126,7 +130,7 @@ async function handleHclBlockDiagnostics(policyDocument: PolicyDocumentNode): Pr
       } else if (entry.key === 'resources' || entry.key === 'not_resources') {
         diagnostics = diagnostics.concat(resourceValidator.validate(entry));
       } else if (entry.key === 'condition') {
-        diagnostics = diagnostics.concat(conditionValidator.validate(entry));
+        diagnostics = diagnostics.concat(conditionValidator.validate(entry, effect));
       } else if (isRuleEnabled('UNRECOGNIZED_KEY')) {
         diagnostics.push(
           createDiagnostic('UNRECOGNIZED_KEY', `Unrecognized entry "${entry.key}" in statement`, entry.keyRange),

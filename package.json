@@ -101,6 +101,11 @@
           "default": true,
           "description": "Warn when a single-valued condition key is used with a ForAnyValue/ForAllValues set operator."
         },
+        "aws-iam-language-server.diagnostics.PERMISSIVE_SET_OPERATOR.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn when ForAllValues is used in an Allow statement, which grants access if the condition key is absent from the request."
+        },
         "aws-iam-language-server.hover.enabled": {
           "type": "boolean",
           "default": true,

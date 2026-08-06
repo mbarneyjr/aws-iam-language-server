@@ -48,6 +48,9 @@ export const diagnosticRules = {
   UNNECESSARY_SET_OPERATOR: {
     description: 'Single-valued condition key used with ForAnyValue/ForAllValues',
   },
+  PERMISSIVE_SET_OPERATOR: {
+    description: 'ForAllValues in an Allow statement grants access when the condition key is absent',
+  },
 } as const satisfies Record<string, DiagnosticRule>;
 
 export type DiagnosticRuleId = keyof typeof diagnosticRules;
