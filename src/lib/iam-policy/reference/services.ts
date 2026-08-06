@@ -5,6 +5,7 @@ import type { Action, ConditionKey, ResourceDef, ServiceData } from './types.ts'
 export class ServiceReference {
   static #serviceDataMap: Record<string, ServiceData> = {};
   static #allActions: Array<string>;
+  static #allConditionKeys: Record<string, ConditionKey>;
   static #allServices: Array<string>;
   static #servicePrincipals: Array<string>;
   static #globalConditionKeys: Array<ConditionKey>;
@@ -33,6 +34,19 @@ export class ServiceReference {
       }
     }
     return ServiceReference.#servicePrincipals;
+  }
+
+  static getAllConditionKeys(): Record<string, ConditionKey> {
+    if (!ServiceReference.#allConditionKeys) {
+      try {
+        ServiceReference.#allConditionKeys = JSON.parse(
+          readFileSync(`${import.meta.dirname}/../../../data/servicereference/condition-keys.json`, 'utf-8'),
+        );
+      } catch {
+        return {};
+      }
+    }
+    return ServiceReference.#allConditionKeys;
   }
 
   static getAllActions(): Array<string> {
