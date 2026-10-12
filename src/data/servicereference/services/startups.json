@@ -1,0 +1,1 @@
+{"name":"startups","actions":{"GetSpendSummary":{"name":"GetSpendSummary","service":"startups","conditionKeys":[],"resources":[]}},"resources":[],"conditionKeys":{},"url":"https://docs.aws.amazon.com/service-authorization/latest/reference/list_startups.html"}
