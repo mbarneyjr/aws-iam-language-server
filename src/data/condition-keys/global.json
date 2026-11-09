@@ -48,6 +48,14 @@
     "description": "Use this key to compare the source chat configuration ARN set by the principal to the chat configuration ARN you specify in the policy of the IAM role associated with your channel configuration. You can authorize requests based on the assume role session initiated by Amazon Q Developer in chat applications."
   },
   {
+    "name": "aws:CrossPartitionSourceRegion",
+    "types": [
+      "String"
+    ],
+    "availability": "This key is present in the request context only for role sessions created through cross-partition identity federation by calling AssumeRoleWithWebIdentity with a token issued by GetWebIdentityToken. It is not present for sessions created with tokens from other OpenID Connect (OIDC) identity providers.",
+    "description": "Use this key to compare the AWS Region where AWS STS issued a web identity token with the AWS Region that you specify in the policy. When you assume a role across an AWS partition boundary using a token from the GetWebIdentityToken operation, this key holds the source AWS Region where the token was issued. After a policy change propagates, an explicit deny using this key blocks matching requests from existing sessions without waiting for their temporary credentials to expire."
+  },
+  {
     "name": "aws:CurrentTime",
     "types": [
       "Date"
@@ -85,7 +93,7 @@
       "String"
     ],
     "availability": "This key is present in the role-session of a role that was assumed using OpenID Connect (OIDC) provider, and in the role-trust policy when an OIDC provider is used to call AssumeRoleWithWebIdentity.",
-    "description": "Use this key to compare the principal's issuing identity provider (IdP) with the IdP that you specify in the policy. This means that an IAM role assumed using the AssumeRoleWithWebIdentity AWS STS operation. When the resulting role session's temporary credentials are used to make a request, the request context identifies the IdP that authenticated the original federated identity."
+    "description": "Use this key to compare the principal's issuing identity provider (IdP) with the IdP that you specify in the policy. This key applies to an IAM role assumed using the AssumeRoleWithWebIdentity AWS STS operation. When the resulting role session's temporary credentials are used to make a request, the request context identifies the IdP that authenticated the original federated identity."
   },
   {
     "name": "aws:IsMcpServiceAction",
